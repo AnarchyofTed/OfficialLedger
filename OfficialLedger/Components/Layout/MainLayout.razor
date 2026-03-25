@@ -1,23 +1,42 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<div class="page-shell">
+    <header class="topbar">
+        <div class="topbar-left">
+            <a href="/" class="brand">
+                <span class="brand-icon">◔</span>
+                <span class="brand-text">OfficialLedger</span>
+            </a>
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+        <nav class="topbar-nav">
+            <NavLink href="/" Match="NavLinkMatch.All" class="nav-link">
+                Dashboard
+            </NavLink>
+            <NavLink href="/games" class="nav-link">
+                My Games
+            </NavLink>
+            <NavLink href="/reports" class="nav-link">
+                Reports
+            </NavLink>
+        </nav>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+        <div class="topbar-right">
+            <AuthorizeView>
+                <Authorized>
+                    <div class="user-pill">
+                        <span class="user-avatar">👤</span>
+                        <a href="/Account/Manage" class="user-link">@context.User.Identity?.Name</a>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/Account/Login" class="user-link">Login</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </header>
+
+    <main class="main-content">
+        @Body
+    </main>
 </div>
