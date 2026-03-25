@@ -6,7 +6,7 @@ Use this checklist to track build progress phase-by-phase.
 
 ### Step 1. Create the project
 - [x] Blazor Web App created
-- [ ] Identity auth working
+- [x] Identity auth working
 - [x] Navbar working
 - [x] App runs locally
 
