@@ -28,6 +28,12 @@
                         <span class="user-avatar">👤</span>
                         <a href="/Account/Manage" class="user-link">@context.User.Identity?.Name</a>
                     </div>
+
+                    <form method="post" action="/Account/Logout" @formname="logoutForm">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="returnUrl" value="" />
+                        <button type="submit" class="logout-btn">Logout</button>
+                    </form>
                 </Authorized>
                 <NotAuthorized>
                     <a href="/Account/Login" class="user-link">Login</a>
