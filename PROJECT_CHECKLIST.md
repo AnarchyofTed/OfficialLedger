@@ -7,8 +7,8 @@ Use this checklist to track build progress phase-by-phase.
 ### Step 1. Create the project
 - [x] Blazor Web App created
 - [ ] Identity auth working
-- [ ] Navbar working
-- [ ] App runs locally
+- [x] Navbar working
+- [x] App runs locally
 
 ### Step 2. Set up the database models
 - [ ] Model created: `ApplicationUser`
