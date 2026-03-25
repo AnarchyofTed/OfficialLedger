@@ -109,3 +109,15 @@ a {
 .user-avatar {
     font-size: 1.2rem;
 }
+
+.logout-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.logout-btn:hover {
+        text-decoration: underline;
+    }
