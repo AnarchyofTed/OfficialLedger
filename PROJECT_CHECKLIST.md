@@ -5,7 +5,7 @@ Use this checklist to track build progress phase-by-phase.
 ## Phase 1: Foundation
 
 ### Step 1. Create the project
-- [ ] Blazor Web App created
+- [x ] Blazor Web App created
 - [ ] Identity auth working
 - [ ] Navbar working
 - [ ] App runs locally
