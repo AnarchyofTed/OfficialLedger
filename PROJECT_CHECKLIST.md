@@ -27,7 +27,7 @@ Use this checklist to track build progress phase-by-phase.
 - [x] Database created
 
 ### Step 3. Decide your first database scope
-- [ ] MVP-only tables in database
+- [x] MVP-only tables in database
 - [ ] Excluded for MVP: crews
 - [ ] Excluded for MVP: assigners
 - [ ] Excluded for MVP: multiple payments per game
@@ -40,25 +40,25 @@ Use this checklist to track build progress phase-by-phase.
 ## Phase 2: Core game tracking
 
 ### Step 4. Build the Add Game page
-- [ ] Add Game form includes `Game Date`
-- [ ] Add Game form includes `Sport`
-- [ ] Add Game form includes `League`
-- [ ] Add Game form includes `Location`
-- [ ] Add Game form includes `Fee Amount`
-- [ ] Add Game form includes `Miles Driven`
-- [ ] Add Game form includes `Paid`
-- [ ] Add Game form includes `Notes`
-- [ ] User can submit a game
-- [ ] Game saves to database
-- [ ] Game tied to logged-in user
+- [x] Add Game form includes `Game Date`
+- [x] Add Game form includes `Sport`
+- [x] Add Game form includes `League`
+- [x] Add Game form includes `Location`
+- [x] Add Game form includes `Fee Amount`
+- [x] Add Game form includes `Miles Driven`
+- [x] Add Game form includes `Paid`
+- [x] Add Game form includes `Notes`
+- [x] User can submit a game
+- [x] Game saves to database
+- [x] Game tied to logged-in user
 
 ### Step 5. Build My Games page
-- [ ] My Games shows `Date`
-- [ ] My Games shows `Sport`
-- [ ] My Games shows `League`
-- [ ] My Games shows `Location`
-- [ ] My Games shows `Fee`
-- [ ] My Games shows `Paid Status`
+- [x] My Games shows `Date`
+- [x] My Games shows `Sport`
+- [x] My Games shows `League`
+- [x] My Games shows `Location`
+- [x] My Games shows `Fee`
+- [x] My Games shows `Paid Status`
 - [ ] Edit button added
 - [ ] Delete button added
 - [ ] User can view saved games
