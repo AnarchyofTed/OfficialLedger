@@ -1,6 +1,87 @@
 ﻿@page "/games"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using OfficialLedger.Data
+@using OfficialLedger.Models
+
+@inject ApplicationDbContext Db
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
 
 <PageTitle>My Games</PageTitle>
 
-<h1>My Games</h1>
-<p>This is the My Games page.</p>
+<div class="page-header">
+    <h1 class="page-title">My Games</h1>
+    <button type="button" class="add-game-btn" @onclick="GoToAddGame">Add Game</button>
+</div>
+
+@if (games == null)
+{
+    <p>Loading...</p>
+}
+else if (!games.Any())
+{
+    <div class="empty-state">
+        <p>No games yet.</p>
+        <button class="add-game-btn" @onclick="GoToAddGame">Add Your First Game</button>
+    </div>
+}
+else
+{
+    <table class="games-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Sport</th>
+                <th>Location</th>
+                <th>Fee</th>
+                <th>Paid</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var game in games)
+            {
+                <tr>
+                    <td>@game.GameDate.ToShortDateString()</td>
+                    <td>@game.Sport</td>
+                    <td>@game.LocationName</td>
+                    <td>@game.FeeAmount.ToString("C")</td>
+                    <td>@(game.IsPaid ? "Paid" : "Unpaid")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Game> games = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user is null)
+        {
+            return;
+        }
+
+        games = await Db.Games
+            .Where(x => x.UserId == user.Id)
+            .OrderByDescending(x => x.GameDate)
+            .ToListAsync();
+    }
+
+    private void GoToAddGame()
+    {
+        var a = 20;
+
+        NavigationManager.NavigateTo("/add-game");
+    }
+}

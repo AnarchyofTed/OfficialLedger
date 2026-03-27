@@ -1,0 +1,175 @@
+﻿@page "/add-game"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using OfficialLedger.Data
+@using OfficialLedger.Models
+
+@inject ApplicationDbContext Db
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Add Game</PageTitle>
+
+<div class="add-game-page">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Add Game</h1>
+            <p class="page-subtitle">Log your officiating assignment below.</p>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <EditForm Model="Input" OnValidSubmit="HandleValidSubmit" FormName="addGameForm">
+            <DataAnnotationsValidator />
+
+            @if (!string.IsNullOrWhiteSpace(SuccessMessage))
+            {
+                <div class="alert-success">@SuccessMessage</div>
+            }
+
+            @if (hasSubmitted)
+            {
+                <ValidationSummary class="validation-summary" />
+            }
+
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="gameDate">Game Date</label>
+                    <InputDate id="gameDate" @bind-Value="Input.GameDate" class="form-input" />
+                </div>
+
+                <div class="form-field">
+                    <label for="sport">Sport</label>
+                    <InputSelect id="sport" @bind-Value="Input.Sport" class="form-input">
+                        <option value="">Select sport</option>
+                        <option value="Baseball">Baseball</option>
+                        <option value="Basketball">Basketball</option>
+                        <option value="Football">Football</option>
+                        <option value="Soccer">Soccer</option>
+                        <option value="Softball">Softball</option>
+                        <option value="Volleyball">Volleyball</option>
+                        <option value="Other">Other</option>
+                    </InputSelect>
+                </div>
+
+                <div class="form-field">
+                    <label for="locationName">Location</label>
+                    <InputText id="locationName" @bind-Value="Input.LocationName" class="form-input" />
+                </div>
+
+                <div class="form-field">
+                    <label for="feeAmount">Fee Amount</label>
+                    <InputNumber id="feeAmount" @bind-Value="Input.FeeAmount" class="form-input" />
+                </div>
+
+                <div class="form-field">
+                    <label for="milesDriven">Miles Driven</label>
+                    <InputNumber id="milesDriven" @bind-Value="Input.MilesDriven" class="form-input" />
+                </div>
+
+                <div class="form-field checkbox-field">
+                    <label for="isPaid">Paid</label>
+                    <div class="checkbox-row">
+                        <InputCheckbox id="isPaid" @bind-Value="Input.IsPaid" class="form-checkbox" />
+                        <span>Mark as already paid</span>
+                    </div>
+                </div>
+
+                <div class="form-field form-field-full">
+                    <label for="notes">Notes</label>
+                    <InputTextArea id="notes" @bind-Value="Input.Notes" class="form-input form-textarea" />
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="primary-btn" @onclick="MarkSubmitted">Save Game</button>
+                <button type="button" class="secondary-btn" @onclick="Cancel">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private AddGameInputModel Input { get; set; } = new()
+    {
+        GameDate = DateTime.Today
+    };
+
+    private string? SuccessMessage;
+    private bool hasSubmitted;
+
+    private void MarkSubmitted()
+    {
+        hasSubmitted = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user is null)
+        {
+            return;
+        }
+
+        var game = new Game
+        {
+            UserId = user.Id,
+            GameDate = Input.GameDate,
+            Sport = Input.Sport,
+            LocationName = Input.LocationName,
+            FeeAmount = Input.FeeAmount,
+            MilesDriven = Input.MilesDriven,
+            IsPaid = Input.IsPaid,
+            Notes = Input.Notes
+        };
+
+        Db.Games.Add(game);
+        await Db.SaveChangesAsync();
+
+        SuccessMessage = "Game saved successfully.";
+
+        Input = new AddGameInputModel
+        {
+            GameDate = DateTime.Today
+        };
+
+        hasSubmitted = false;
+
+        NavigationManager.NavigateTo("/games");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/games");
+    }
+
+    public class AddGameInputModel
+    {
+        [Required(ErrorMessage = "Sport is required.")]
+        public string Sport { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Location is required.")]
+        public string LocationName { get; set; } = string.Empty;
+
+        [Required]
+        public DateTime GameDate { get; set; }
+
+        [Range(0, 10000, ErrorMessage = "Fee amount must be 0 or greater.")]
+        public decimal FeeAmount { get; set; }
+
+        [Range(0, 1000, ErrorMessage = "Miles driven must be 0 or greater.")]
+        public decimal MilesDriven { get; set; }
+
+        public bool IsPaid { get; set; }
+
+        public string? Notes { get; set; }
+    }
+}
