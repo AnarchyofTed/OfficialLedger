@@ -11,20 +11,20 @@ Use this checklist to track build progress phase-by-phase.
 - [x] App runs locally
 
 ### Step 2. Set up the database models
-- [ ] Model created: `ApplicationUser`
-- [ ] Model created: `League`
-- [ ] Model created: `Game`
-- [ ] `Game` includes `Date`
-- [ ] `Game` includes `Sport`
-- [ ] `Game` includes `League`
-- [ ] `Game` includes `Location`
-- [ ] `Game` includes `Fee`
-- [ ] `Game` includes `MilesDriven`
-- [ ] `Game` includes `Paid`/`Unpaid`
-- [ ] `Game` includes `Notes`
-- [ ] `ApplicationDbContext` updated
-- [ ] Migration added
-- [ ] Database created
+- [x] Model created: `ApplicationUser`
+- [x] Model created: `League`
+- [x] Model created: `Game`
+- [x] `Game` includes `Date`
+- [x] `Game` includes `Sport`
+- [x] `Game` includes `League`
+- [x] `Game` includes `Location`
+- [x] `Game` includes `Fee`
+- [x] `Game` includes `MilesDriven`
+- [x] `Game` includes `Paid`/`Unpaid`
+- [x] `Game` includes `Notes`
+- [x] `ApplicationDbContext` updated
+- [x] Migration added
+- [x] Database created
 
 ### Step 3. Decide your first database scope
 - [ ] MVP-only tables in database
