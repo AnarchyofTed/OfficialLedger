@@ -1,0 +1,290 @@
+﻿@page "/games/edit/{GameId:int}"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using OfficialLedger.Data
+@using OfficialLedger.Models
+
+@inject ApplicationDbContext Db
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Game Details</PageTitle>
+
+<div class="add-game-page">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Game Details</h1>
+            <p class="page-subtitle">
+                @(isEditMode ? "Edit your saved game details." : "View your saved game details.")
+            </p>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <p>Loading...</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(loadError))
+    {
+        <div class="validation-summary">@loadError</div>
+    }
+    else
+    {
+        <div class="form-card">
+            <EditForm Model="Input" OnValidSubmit="HandleValidSubmit" FormName="editGameForm">
+                <DataAnnotationsValidator />
+
+                @if (hasSubmitted && isEditMode)
+                {
+                    <ValidationSummary class="validation-summary" />
+                }
+
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="gameDate">Game Date</label>
+                        <InputDate id="gameDate"
+                                   @bind-Value="Input.GameDate"
+                                   class="form-input"
+                                   disabled="@(!isEditMode)" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="sport">Sport</label>
+                        <InputSelect id="sport"
+                                     @bind-Value="Input.Sport"
+                                     class="form-input"
+                                     disabled="@(!isEditMode)">
+                            <option value="">Select sport</option>
+                            <option value="Baseball">Baseball</option>
+                            <option value="Basketball">Basketball</option>
+                            <option value="Football">Football</option>
+                            <option value="Soccer">Soccer</option>
+                            <option value="Softball">Softball</option>
+                            <option value="Volleyball">Volleyball</option>
+                            <option value="Other">Other</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="locationName">Location</label>
+                        <InputText id="locationName"
+                                   @bind-Value="Input.LocationName"
+                                   class="form-input"
+                                   readonly="@(!isEditMode)" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="feeAmount">Fee Amount</label>
+                        <InputNumber id="feeAmount"
+                                     @bind-Value="Input.FeeAmount"
+                                     class="form-input"
+                                     disabled="@(!isEditMode)" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="milesDriven">Miles Driven</label>
+                        <InputNumber id="milesDriven"
+                                     @bind-Value="Input.MilesDriven"
+                                     class="form-input"
+                                     disabled="@(!isEditMode)" />
+                    </div>
+
+                    <div class="form-field checkbox-field">
+                        <label for="isPaid">Paid</label>
+                        <div class="checkbox-row">
+                            <InputCheckbox id="isPaid"
+                                           @bind-Value="Input.IsPaid"
+                                           class="form-checkbox"
+                                           disabled="@(!isEditMode)" />
+                            <span>Mark as already paid</span>
+                        </div>
+                    </div>
+
+                    <div class="form-field form-field-full">
+                        <label for="notes">Notes</label>
+                        <InputTextArea id="notes"
+                                       @bind-Value="Input.Notes"
+                                       class="form-input form-textarea"
+                                       readonly="@(!isEditMode)" />
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    @if (!isEditMode)
+                    {
+                        <button type="button" class="primary-btn" @onclick="EnableEditMode">Edit</button>
+                        <button type="button" class="secondary-btn" @onclick="GoBack">Back</button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="primary-btn" @onclick="MarkSubmitted">Save Changes</button>
+                        <button type="button" class="secondary-btn" @onclick="CancelEdit">Cancel</button>
+                    }
+                </div>
+            </EditForm>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int GameId { get; set; }
+
+    private EditGameInputModel Input { get; set; } = new();
+    private EditGameInputModel OriginalInput { get; set; } = new();
+    private bool isLoading = true;
+    private bool hasSubmitted;
+    private bool isEditMode;
+    private string? loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await GetCurrentUserAsync();
+
+        if (user is null)
+        {
+            NavigationManager.NavigateTo("/Account/Login");
+            return;
+        }
+
+        var game = await Db.Games
+            .FirstOrDefaultAsync(x => x.Id == GameId && x.UserId == user.Id);
+
+        if (game is null)
+        {
+            loadError = "Game not found.";
+            isLoading = false;
+            return;
+        }
+
+        Input = MapFromGame(game);
+        OriginalInput = CloneInput(Input);
+
+        isLoading = false;
+    }
+
+    private void EnableEditMode()
+    {
+        isEditMode = true;
+        hasSubmitted = false;
+    }
+
+    private void MarkSubmitted()
+    {
+        hasSubmitted = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (!isEditMode)
+        {
+            return;
+        }
+
+        var user = await GetCurrentUserAsync();
+
+        if (user is null)
+        {
+            return;
+        }
+
+        var dbGame = await Db.Games
+            .FirstOrDefaultAsync(x => x.Id == GameId && x.UserId == user.Id);
+
+        if (dbGame is null)
+        {
+            loadError = "Game not found.";
+            return;
+        }
+
+        dbGame.GameDate = Input.GameDate;
+        dbGame.Sport = Input.Sport;
+        dbGame.LocationName = Input.LocationName;
+        dbGame.FeeAmount = Input.FeeAmount;
+        dbGame.MilesDriven = Input.MilesDriven;
+        dbGame.IsPaid = Input.IsPaid;
+        dbGame.Notes = Input.Notes;
+
+        await Db.SaveChangesAsync();
+
+        OriginalInput = CloneInput(Input);
+        isEditMode = false;
+        hasSubmitted = false;
+        NavigationManager.NavigateTo("/games");
+    }
+
+    private void CancelEdit()
+    {
+        Input = CloneInput(OriginalInput);
+        isEditMode = false;
+        hasSubmitted = false;
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/games");
+    }
+
+    private async Task<ApplicationUser?> GetCurrentUserAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return await UserManager.GetUserAsync(authState.User);
+    }
+
+    private static EditGameInputModel MapFromGame(Game game)
+    {
+        return new EditGameInputModel
+        {
+            GameDate = game.GameDate,
+            Sport = game.Sport,
+            LocationName = game.LocationName,
+            FeeAmount = game.FeeAmount,
+            MilesDriven = game.MilesDriven,
+            IsPaid = game.IsPaid,
+            Notes = game.Notes
+        };
+    }
+
+    private static EditGameInputModel CloneInput(EditGameInputModel input)
+    {
+        return new EditGameInputModel
+        {
+            GameDate = input.GameDate,
+            Sport = input.Sport,
+            LocationName = input.LocationName,
+            FeeAmount = input.FeeAmount,
+            MilesDriven = input.MilesDriven,
+            IsPaid = input.IsPaid,
+            Notes = input.Notes
+        };
+    }
+
+    public class EditGameInputModel
+    {
+        [Required(ErrorMessage = "Sport is required.")]
+        public string Sport { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Location is required.")]
+        public string LocationName { get; set; } = string.Empty;
+
+        [Required]
+        public DateTime GameDate { get; set; }
+
+        [Range(0, 10000, ErrorMessage = "Fee amount must be 0 or greater.")]
+        public decimal FeeAmount { get; set; }
+
+        [Range(0, 1000, ErrorMessage = "Miles driven must be 0 or greater.")]
+        public decimal MilesDriven { get; set; }
+
+        public bool IsPaid { get; set; }
+
+        public string? Notes { get; set; }
+    }
+}

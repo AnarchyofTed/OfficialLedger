@@ -64,7 +64,7 @@ a {
     font-weight: 500;
     padding: 8px 4px;
     border-bottom: 3px solid transparent;
-    transition: 0.15s ease-in-out;
+    transition: 0.10s ease-in-out;
 }
 
     .nav-link:hover {
@@ -220,6 +220,15 @@ a {
     font-size: 1rem;
     width: 100%;
     box-sizing: border-box;
+}
+
+.form-input[disabled],
+.form-checkbox[disabled],
+textarea[readonly],
+input[readonly] {
+    background-color: #f8fafc;
+    color: #475467;
+    cursor: default;
 }
 
 .form-textarea {
@@ -438,4 +447,13 @@ a {
     .secondary-btn {
         width: 100%;
     }
+}
+
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.clickable-row:hover {
+    background-color: #f5f9ff;
 }
