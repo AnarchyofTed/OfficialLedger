@@ -59,7 +59,7 @@ Use this checklist to track build progress phase-by-phase.
 - [x] My Games shows `Location`
 - [x] My Games shows `Fee`
 - [x] My Games shows `Paid Status`
-- [ ] Edit button added
+- [x] Edit button added
 - [ ] Delete button added
 - [ ] User can view saved games
 - [ ] User can edit saved games
