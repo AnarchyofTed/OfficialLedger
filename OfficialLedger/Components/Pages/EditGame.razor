@@ -14,6 +14,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
 <PageTitle>Game Details</PageTitle>
 
@@ -119,18 +120,25 @@
                 <div class="form-actions">
                     @if (!isEditMode)
                     {
-                        <button type="button" class="primary-btn" @onclick="EnableEditMode">Edit</button>
-                        <button type="button" class="secondary-btn" @onclick="GoBack">Back</button>
+                        <div class="left-actions">
+                            <button type="button" class="primary-btn" @onclick="EnableEditMode">Edit</button>
+                            <button type="button" class="secondary-btn" @onclick="GoBack">Back</button>
+                        </div>
+
+                       
+                        <button type="button" class="danger-btn" @onclick="DeleteGame">Delete</button>
+                        
                     }
                     else
-                    {
-                        <button type="submit" class="primary-btn" @onclick="MarkSubmitted">Save Changes</button>
-                        <button type="button" class="secondary-btn" @onclick="CancelEdit">Cancel</button>
+                    {   <div class="left-actions">
+                            <button type="submit" class="primary-btn" @onclick="MarkSubmitted">Save Changes</button>
+                            <button type="button" class="secondary-btn" @onclick="CancelEdit">Cancel</button>
+                        </div>
                     }
                 </div>
             </EditForm>
         </div>
-    }
+     }
 </div>
 
 @code {
@@ -286,5 +294,35 @@
         public bool IsPaid { get; set; }
 
         public string? Notes { get; set; }
+    }
+
+    private async Task DeleteGame()
+    {    
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this game?");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var user = await GetCurrentUserAsync();
+
+        if (user is null)
+        {
+            return;
+        }
+
+        var dbGame = await Db.Games.FirstOrDefaultAsync(x => x.Id == GameId && x.UserId == user.Id);
+
+        if (dbGame is null)
+        {
+            loadError = "Game not found.";
+            return;
+        }
+
+        Db.Games.Remove(dbGame);
+        await Db.SaveChangesAsync();
+
+        NavigationManager.NavigateTo("/games");
     }
 }
