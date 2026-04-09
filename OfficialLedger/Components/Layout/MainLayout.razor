@@ -1,49 +1,62 @@
 ﻿@inherits LayoutComponentBase
-@inject AuthenticationStateProvider AuthProvider
+@using Microsoft.AspNetCore.Components.Authorization
 
-<div class="page-shell">
-    <header class="topbar">
-        <div class="topbar-left">
-            <a href="/" class="brand">
-                <span class="brand-icon">◔</span>
-                <span class="brand-text">OfficialLedger</span>
-            </a>
+<div class="app-shell">
+    <aside class="sidebar">
+        <div class="sidebar-dark-panel"></div>
+
+        <div class="sidebar-content">
+            <div class="sidebar-top">
+                <a href="/" class="sidebar-brand">
+                    <span class="brand-icon">🏷️</span>
+                    <span class="brand-text">OfficialLedger</span>
+                </a>
+            </div>
+                <nav class="sidebar-nav">
+                    <NavLink href="/" Match="NavLinkMatch.All" class="sidebar-link">
+                        <span class="sidebar-link-icon">⌂</span>
+                        <span>Dashboard</span>
+                    </NavLink>
+
+                    <NavLink href="/games" class="sidebar-link">
+                        <span class="sidebar-link-icon">≡</span>
+                        <span>My Games</span>
+                    </NavLink>
+
+                    <NavLink href="/reports" class="sidebar-link">
+                        <span class="sidebar-link-icon">▣</span>
+                        <span>Reports</span>
+                    </NavLink>
+                </nav>
+            <div class="sidebar-bottom">
+                <AuthorizeView>
+                    <Authorized>
+                        <div class="sidebar-user">
+                            <div class="sidebar-user-avatar">👤</div>
+
+                            <div class="sidebar-user-info">
+                                <a href="/Account/Manage" class="sidebar-user-name">
+                                    @context.User.Identity?.Name
+                                </a>
+
+                                <form method="post" action="/Account/Logout" @formname="logoutForm">
+                                    <AntiforgeryToken />
+                                    <input type="hidden" name="returnUrl" value="" />
+                                    <button type="submit" class="sidebar-logout-btn">Log out</button>
+                                </form>
+                            </div>
+                        </div>
+                    </Authorized>
+
+                    <NotAuthorized>
+                        <a href="/Account/Login" class="sidebar-login-link">Login</a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
         </div>
+    </aside>
 
-        <nav class="topbar-nav">
-            <NavLink href="/" Match="NavLinkMatch.All" class="nav-link">
-                Dashboard
-            </NavLink>
-            <NavLink href="/games" class="nav-link">
-                My Games
-            </NavLink>
-            <NavLink href="/reports" class="nav-link">
-                Reports
-            </NavLink>
-        </nav>
-
-        <div class="topbar-right">
-            <AuthorizeView>
-                <Authorized>
-                    <div class="user-pill">
-                        <span class="user-avatar">👤</span>
-                        <a href="/Account/Manage" class="user-link">@context.User.Identity?.Name</a>
-                    </div>
-
-                    <form method="post" action="/Account/Logout" @formname="logoutForm">
-                        <AntiforgeryToken />
-                        <input type="hidden" name="returnUrl" value="" />
-                        <button type="submit" class="logout-btn">Logout</button>
-                    </form>
-                </Authorized>
-                <NotAuthorized>
-                    <a href="/Account/Login" class="user-link">Login</a>
-                </NotAuthorized>
-            </AuthorizeView>
-        </div>
-    </header>
-
-    <main class="main-content">
+    <main class="main-area">
         @Body
     </main>
 </div>
