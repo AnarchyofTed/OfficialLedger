@@ -834,7 +834,13 @@ input[readonly] {
     align-items: flex-start;
 }
 
+.season-picker {
+    position: relative;
+}
+
 .season-btn {
+    min-width: 220px;
+    text-align: left;
     background: #ffffff;
     border: 1px solid #d0d9e7;
     border-radius: 12px;
@@ -857,12 +863,49 @@ input[readonly] {
         outline-offset: 2px;
     }
 
+.season-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #d0d9e7;
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+    padding: 6px;
+    z-index: 20;
+}
+
+.season-option {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.93rem;
+    color: #1f2937;
+    cursor: pointer;
+}
+
+    .season-option:hover {
+        background: #eef4ff;
+    }
+
+.season-option-empty {
+    color: #667085;
+    font-size: 0.9rem;
+    padding: 10px 12px;
+}
+
 @media (max-width: 768px) {
     .dashboard-header {
         align-items: stretch;
     }
 
-    .season-btn {
+    .season-picker,
+    .season-btn,
+    .season-menu {
         width: 100%;
     }
 }

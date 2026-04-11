@@ -9,4 +9,5 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<League> Leagues => Set<League>();
     public DbSet<Game> Games => Set<Game>();
+    public DbSet<Season> Seasons => Set<Season>();
 }
