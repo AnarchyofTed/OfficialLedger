@@ -830,3 +830,39 @@ input[readonly] {
 .clickable-row:hover {
     background-color: #f5f9ff;
 }
+.dashboard-header {
+    align-items: flex-start;
+}
+
+.season-btn {
+    background: #ffffff;
+    border: 1px solid #d0d9e7;
+    border-radius: 12px;
+    color: #1f2937;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 10px 16px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .season-btn:hover {
+        border-color: #1e5db8;
+        box-shadow: 0 6px 16px rgba(30, 93, 184, 0.18);
+    }
+
+    .season-btn:focus-visible {
+        outline: 3px solid rgba(30, 93, 184, 0.22);
+        outline-offset: 2px;
+    }
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        align-items: stretch;
+    }
+
+    .season-btn {
+        width: 100%;
+    }
+}
