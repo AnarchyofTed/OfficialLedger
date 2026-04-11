@@ -11,7 +11,8 @@ public class Game
 
     public DateTime GameDate { get; set; }
 
-    public string Sport { get; set; } = string.Empty;
+    public int SportTypeId { get; set; }
+    public SportType? SportType { get; set; }
     public string LocationName { get; set; } = string.Empty;
 
     public decimal FeeAmount { get; set; }

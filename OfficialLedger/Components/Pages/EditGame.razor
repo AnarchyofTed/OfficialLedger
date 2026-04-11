@@ -59,17 +59,14 @@
                     <div class="form-field">
                         <label for="sport">Sport</label>
                         <InputSelect id="sport"
-                                     @bind-Value="Input.Sport"
+                                     @bind-Value="Input.SportTypeId"
                                      class="form-input"
                                      disabled="@(!isEditMode)">
                             <option value="">Select sport</option>
-                            <option value="Baseball">Baseball</option>
-                            <option value="Basketball">Basketball</option>
-                            <option value="Football">Football</option>
-                            <option value="Soccer">Soccer</option>
-                            <option value="Softball">Softball</option>
-                            <option value="Volleyball">Volleyball</option>
-                            <option value="Other">Other</option>
+                            @foreach (var sportType in sportTypes)
+                            {
+                                <option value="@sportType.Id">@sportType.Name</option>
+                            }
                         </InputSelect>
                     </div>
 
@@ -152,6 +149,7 @@
     private bool hasSubmitted;
     private bool isEditMode;
     private string? loadError;
+    private List<SportType> sportTypes = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -162,6 +160,10 @@
             NavigationManager.NavigateTo("/Account/Login");
             return;
         }
+
+        sportTypes = await Db.SportTypes
+            .OrderBy(x => x.Name)
+            .ToListAsync();
 
         var game = await Db.Games
             .FirstOrDefaultAsync(x => x.Id == GameId && x.UserId == user.Id);
@@ -214,7 +216,7 @@
         }
 
         dbGame.GameDate = Input.GameDate;
-        dbGame.Sport = Input.Sport;
+        dbGame.SportTypeId = Input.SportTypeId!.Value;
         dbGame.LocationName = Input.LocationName;
         dbGame.FeeAmount = Input.FeeAmount;
         dbGame.MilesDriven = Input.MilesDriven;
@@ -252,7 +254,7 @@
         return new EditGameInputModel
         {
             GameDate = game.GameDate,
-            Sport = game.Sport,
+            SportTypeId = game.SportTypeId,
             LocationName = game.LocationName,
             FeeAmount = game.FeeAmount,
             MilesDriven = game.MilesDriven,
@@ -266,7 +268,7 @@
         return new EditGameInputModel
         {
             GameDate = input.GameDate,
-            Sport = input.Sport,
+            SportTypeId = input.SportTypeId,
             LocationName = input.LocationName,
             FeeAmount = input.FeeAmount,
             MilesDriven = input.MilesDriven,
@@ -278,7 +280,7 @@
     public class EditGameInputModel
     {
         [Required(ErrorMessage = "Sport is required.")]
-        public string Sport { get; set; } = string.Empty;
+        public int? SportTypeId { get; set; }
 
         [Required(ErrorMessage = "Location is required.")]
         public string LocationName { get; set; } = string.Empty;

@@ -49,7 +49,7 @@
                 {
                     <tr class="clickable-row" @onclick="() => GoToEditGame(game.Id)">
                         <td>@game.GameDate.ToShortDateString()</td>
-                        <td>@game.Sport</td>
+                        <td>@game.SportType?.Name</td>
                         <td>@game.LocationName</td>
                         <td>@game.FeeAmount.ToString("C")</td>
                         <td>@(game.IsPaid ? "Paid" : "Unpaid")</td>
@@ -73,6 +73,7 @@
         }
 
         games = await Db.Games
+            .Include(x => x.SportType)
             .Where(x => x.UserId == user.Id)
             .OrderByDescending(x => x.GameDate)
             .ToListAsync();
