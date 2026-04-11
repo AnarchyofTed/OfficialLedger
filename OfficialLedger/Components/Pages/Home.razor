@@ -1,14 +1,45 @@
 @page "/"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Dashboard</PageTitle>
+
 
 <section class="dashboard-page">
     <header class="page-header dashboard-header">
         <div>
-            <h1 class="page-title">Dashboard</h1>
+            <h1 class="page-title">Welcome Back, @UserName</h1>
             <p class="page-subtitle">Welcome to OfficialLedger.</p>
         </div>
 
         <button type="button" class="season-btn">2024 Baseball Season</button>
     </header>
 </section>
+
+@code {
+    private string UserName = "User";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        var name = authState.User.Identity?.Name ?? "User";
+
+        // Optional: remove email domain if present
+        name = name.Split('@')[0];
+
+        // Trim to max 20 characters
+        if (name.Length > 20)
+        {
+            name = name.Substring(0, 20) + "...";
+        }
+
+        UserName = name;
+    }
+}
+
