@@ -71,7 +71,12 @@
 
     private static string FormatSeasonDateRange(Season season)
     {
-        return $"{season.StartDate:MMM d ''yy} - {season.EndDate:MMM d ''yy}";
+        if (season.StartDate.Year == season.EndDate.Year)
+        {
+            return $"{season.StartDate:MMM d} - {season.EndDate:MMM d, yyyy}";
+        }
+
+        return $"{season.StartDate:MMM d yyyy} - {season.EndDate:MMM d, yyyy}";
     }
 
     private string UserName = "User";
