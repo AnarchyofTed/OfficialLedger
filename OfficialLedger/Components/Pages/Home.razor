@@ -3,6 +3,8 @@
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@using System.Text.RegularExpressions
 @using OfficialLedger.Data
 @using OfficialLedger.Models
 
@@ -51,22 +53,34 @@
     </header>
 </section>
 
+<section class="dashboard-metrics">
+    <article class="metric-card">
+        <p class="metric-label">Total Earnings</p>
+        <p class="metric-value">@totalEarnings.ToString("C")</p>
+        <p class="metric-subtext">@totalGames @(totalGames == 1 ? "game" : "games")</p>
+    </article>
+</section>
+
 @code {
     private List<Season> seasons = new();
     private bool isSeasonMenuOpen;
     private string selectedSeasonName = "2024 Baseball Season";
     private string selectedSeasonDateRange = "Welcome to OfficialLedger.";
+    private decimal totalEarnings;
+    private int totalGames;
+    private string? userId;
 
     private void ToggleSeasonMenu()
     {
         isSeasonMenuOpen = !isSeasonMenuOpen;
     }
 
-    private void SelectSeason(Season season)
+    private async Task SelectSeason(Season season)
     {
         selectedSeasonName = season.Name;
         selectedSeasonDateRange = FormatSeasonDateRange(season);
         isSeasonMenuOpen = false;
+        await LoadTotalEarningsAsync();
     }
 
     private static string FormatSeasonDateRange(Season season)
@@ -86,6 +100,7 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
 
         var name = authState.User.Identity?.Name ?? "User";
+        userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         // Optional: remove email domain if present
         name = name.Split('@')[0];
@@ -107,5 +122,34 @@
             selectedSeasonName = seasons[0].Name;
             selectedSeasonDateRange = FormatSeasonDateRange(seasons[0]);
         }
+
+        await LoadTotalEarningsAsync();
+    }
+
+    private async Task LoadTotalEarningsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            totalEarnings = 0;
+            totalGames = 0;
+            return;
+        }
+
+        DateTime? seasonStart = null;
+        DateTime? seasonEnd = null;
+
+        var seasonYearMatch = Regex.Match(selectedSeasonName, @"\b(19|20)\d{2}\b");
+        if (seasonYearMatch.Success && int.TryParse(seasonYearMatch.Value, out var seasonYear))
+        {
+            seasonStart = new DateTime(seasonYear, 1, 1);
+            seasonEnd = seasonStart.Value.AddYears(1);
+        }
+
+        var query = Db.Games.Where(x =>
+            x.UserId == userId &&
+            (!seasonStart.HasValue || (x.GameDate >= seasonStart.Value && x.GameDate < seasonEnd!.Value)));
+
+        totalEarnings = await query.SumAsync(x => x.FeeAmount);
+        totalGames = await query.CountAsync();
     }
 }
