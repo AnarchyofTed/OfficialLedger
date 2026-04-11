@@ -25,15 +25,12 @@ namespace OfficialLedger.Migrations
                     table.PrimaryKey("PK_Season", x => x.Id);
                 });
 
-            migrationBuilder.InsertData(
-                table: "Season",
-                columns: new[] { "Id", "Name" },
-                values: new object[,]
-                {
-                    { 1, "2024 Baseball Season" },
-                    { 2, "2025 Baseball Season" },
-                    { 3, "2026 Baseball Season" }
-                });
+            migrationBuilder.Sql("""
+                INSERT INTO [Season] ([Id], [Name]) VALUES
+                (1, '2024 Baseball Season'),
+                (2, '2025 Baseball Season'),
+                (3, '2026 Baseball Season');
+                """);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
