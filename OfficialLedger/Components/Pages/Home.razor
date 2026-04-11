@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 @using OfficialLedger.Data
 @using OfficialLedger.Models
 
@@ -51,10 +52,18 @@
     </header>
 </section>
 
+<section class="dashboard-metrics">
+    <article class="metric-card">
+        <p class="metric-label">Total Earnings</p>
+        <p class="metric-value">@totalEarnings.ToString("C")</p>
+    </article>
+</section>
+
 @code {
     private List<Season> seasons = new();
     private bool isSeasonMenuOpen;
     private string selectedSeasonName = "2024 Baseball Season";
+    private decimal totalEarnings;
 
     private void ToggleSeasonMenu()
     {
@@ -74,6 +83,7 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
 
         var name = authState.User.Identity?.Name ?? "User";
+        var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         // Optional: remove email domain if present
         name = name.Split('@')[0];
@@ -90,10 +100,16 @@
             .OrderBy(x => x.Name)
             .ToListAsync();
 
+        if (!string.IsNullOrEmpty(userId))
+        {
+            totalEarnings = await Db.Games
+                .Where(x => x.UserId == userId)
+                .SumAsync(x => x.FeeAmount);
+        }
+
         if (seasons.Any())
         {
             selectedSeasonName = seasons[0].Name;
         }
     }
 }
-
