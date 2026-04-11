@@ -11,7 +11,7 @@ namespace OfficialLedger.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Seasons",
+                name: "Season",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -20,11 +20,11 @@ namespace OfficialLedger.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Seasons", x => x.Id);
+                    table.PrimaryKey("PK_Season", x => x.Id);
                 });
 
             migrationBuilder.InsertData(
-                table: "Seasons",
+                table: "Season",
                 columns: new[] { "Id", "Name" },
                 values: new object[,]
                 {
@@ -38,7 +38,7 @@ namespace OfficialLedger.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Seasons");
+                name: "Season");
         }
     }
 }
