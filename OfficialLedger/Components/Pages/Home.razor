@@ -56,18 +56,6 @@
     private bool isSeasonMenuOpen;
     private string selectedSeasonName = "2024 Baseball Season";
 
-    protected override async Task OnInitializedAsync()
-    {
-        seasons = await Db.Seasons
-            .OrderBy(x => x.Name)
-            .ToListAsync();
-
-        if (seasons.Any())
-        {
-            selectedSeasonName = seasons[0].Name;
-        }
-    }
-
     private void ToggleSeasonMenu()
     {
         isSeasonMenuOpen = !isSeasonMenuOpen;
@@ -97,6 +85,15 @@
         }
 
         UserName = name;
+
+        seasons = await Db.Seasons
+            .OrderBy(x => x.Name)
+            .ToListAsync();
+
+        if (seasons.Any())
+        {
+            selectedSeasonName = seasons[0].Name;
+        }
     }
 }
 
