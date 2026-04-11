@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @using OfficialLedger.Data
 @using OfficialLedger.Models
 
@@ -46,15 +47,12 @@
 
                 <div class="form-field">
                     <label for="sport">Sport</label>
-                    <InputSelect id="sport" @bind-Value="Input.Sport" class="form-input">
+                    <InputSelect id="sport" @bind-Value="Input.SportTypeId" class="form-input">
                         <option value="">Select sport</option>
-                        <option value="Baseball">Baseball</option>
-                        <option value="Basketball">Basketball</option>
-                        <option value="Football">Football</option>
-                        <option value="Soccer">Soccer</option>
-                        <option value="Softball">Softball</option>
-                        <option value="Volleyball">Volleyball</option>
-                        <option value="Other">Other</option>
+                        @foreach (var sportType in sportTypes)
+                        {
+                            <option value="@sportType.Id">@sportType.Name</option>
+                        }
                     </InputSelect>
                 </div>
 
@@ -103,6 +101,14 @@
 
     private string? SuccessMessage;
     private bool hasSubmitted;
+    private List<SportType> sportTypes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        sportTypes = await Db.SportTypes
+            .OrderBy(x => x.Name)
+            .ToListAsync();
+    }
 
     private void MarkSubmitted()
     {
@@ -123,7 +129,7 @@
         {
             UserId = user.Id,
             GameDate = Input.GameDate,
-            Sport = Input.Sport,
+            SportTypeId = Input.SportTypeId!.Value,
             LocationName = Input.LocationName,
             FeeAmount = Input.FeeAmount,
             MilesDriven = Input.MilesDriven,
@@ -154,7 +160,7 @@
     public class AddGameInputModel
     {
         [Required(ErrorMessage = "Sport is required.")]
-        public string Sport { get; set; } = string.Empty;
+        public int? SportTypeId { get; set; }
 
         [Required(ErrorMessage = "Location is required.")]
         public string LocationName { get; set; } = string.Empty;

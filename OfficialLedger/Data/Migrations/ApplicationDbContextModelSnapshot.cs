@@ -262,9 +262,8 @@ namespace OfficialLedger.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Sport")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("SportTypeId")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -273,8 +272,10 @@ namespace OfficialLedger.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("LeagueId");
+                    
+                    b.HasIndex("SportTypeId");
 
-                    b.ToTable("Games");
+                    b.ToTable("Game");
                 });
 
             modelBuilder.Entity("OfficialLedger.Models.League", b =>
@@ -295,7 +296,24 @@ namespace OfficialLedger.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Leagues");
+                    b.ToTable("League");
+                });
+
+            modelBuilder.Entity("OfficialLedger.Models.SportType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SportType");
                 });
 
 
@@ -379,7 +397,15 @@ namespace OfficialLedger.Migrations
                         .WithMany()
                         .HasForeignKey("LeagueId");
 
+                    b.HasOne("OfficialLedger.Models.SportType", "SportType")
+                        .WithMany()
+                        .HasForeignKey("SportTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("League");
+
+                    b.Navigation("SportType");
                 });
 #pragma warning restore 612, 618
         }
