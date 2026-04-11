@@ -1,9 +1,13 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using OfficialLedger.Data;
 
 #nullable disable
 
 namespace OfficialLedger.Migrations
 {
+    [DbContext(typeof(ApplicationDbContext))]
+    [Migration("20260411130000_AddSportTypeAndRenameTables")]
     public partial class AddSportTypeAndRenameTables : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
