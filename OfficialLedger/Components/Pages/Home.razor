@@ -2,6 +2,12 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 
+@using Microsoft.EntityFrameworkCore
+@using OfficialLedger.Data
+@using OfficialLedger.Models
+
+@inject ApplicationDbContext Db
+
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 
@@ -17,11 +23,62 @@
             <p class="page-subtitle">Welcome to OfficialLedger.</p>
         </div>
 
-        <button type="button" class="season-btn">2024 Baseball Season</button>
+        <div class="season-picker">
+            <button type="button" class="season-btn" @onclick="ToggleSeasonMenu">@selectedSeasonName</button>
+
+            @if (isSeasonMenuOpen)
+            {
+                <div class="season-menu">
+                    @if (!seasons.Any())
+                    {
+                        <div class="season-option-empty">No seasons available.</div>
+                    }
+                    else
+                    {
+                        @foreach (var season in seasons)
+                        {
+                            <button
+                                type="button"
+                                class="season-option"
+                                @onclick="() => SelectSeason(season)">
+                                @season.Name
+                            </button>
+                        }
+                    }
+                </div>
+            }
+        </div>
     </header>
 </section>
 
 @code {
+    private List<Season> seasons = new();
+    private bool isSeasonMenuOpen;
+    private string selectedSeasonName = "2024 Baseball Season";
+
+    protected override async Task OnInitializedAsync()
+    {
+        seasons = await Db.Seasons
+            .OrderBy(x => x.Name)
+            .ToListAsync();
+
+        if (seasons.Any())
+        {
+            selectedSeasonName = seasons[0].Name;
+        }
+    }
+
+    private void ToggleSeasonMenu()
+    {
+        isSeasonMenuOpen = !isSeasonMenuOpen;
+    }
+
+    private void SelectSeason(Season season)
+    {
+        selectedSeasonName = season.Name;
+        isSeasonMenuOpen = false;
+    }
+
     private string UserName = "User";
 
     protected override async Task OnInitializedAsync()
