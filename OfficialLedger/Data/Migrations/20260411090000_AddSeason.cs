@@ -26,10 +26,10 @@ namespace OfficialLedger.Migrations
                 });
 
             migrationBuilder.Sql("""
-                INSERT INTO [Season] ([Id], [Name]) VALUES
-                (1, '2024 Baseball Season'),
-                (2, '2025 Baseball Season'),
-                (3, '2026 Baseball Season');
+                INSERT INTO [Season] ([Name]) VALUES
+                ('2024 Baseball Season'),
+                ('2025 Baseball Season'),
+                ('2026 Baseball Season');
                 """);
         }
 
