@@ -119,13 +119,19 @@
             return;
         }
 
-        var query = Db.Games.Where(x => x.UserId == userId);
+        DateTime? seasonStart = null;
+        DateTime? seasonEnd = null;
 
         var seasonYearMatch = Regex.Match(selectedSeasonName, @"\b(19|20)\d{2}\b");
         if (seasonYearMatch.Success && int.TryParse(seasonYearMatch.Value, out var seasonYear))
         {
-            query = query.Where(x => x.GameDate.Year == seasonYear);
+            seasonStart = new DateTime(seasonYear, 1, 1);
+            seasonEnd = seasonStart.Value.AddYears(1);
         }
+
+        var query = Db.Games.Where(x =>
+            x.UserId == userId &&
+            (!seasonStart.HasValue || (x.GameDate >= seasonStart.Value && x.GameDate < seasonEnd!.Value)));
 
         totalEarnings = await query.SumAsync(x => x.FeeAmount);
     }
