@@ -1,10 +1,14 @@
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using OfficialLedger.Data;
 
 #nullable disable
 
 namespace OfficialLedger.Migrations
 {
+    [DbContext(typeof(ApplicationDbContext))]
+    [Migration("20260411100000_AddSeasonDates")]
     public partial class AddSeasonDates : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
