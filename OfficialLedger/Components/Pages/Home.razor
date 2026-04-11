@@ -20,7 +20,7 @@
     <header class="page-header dashboard-header">
         <div>
             <h1 class="page-title">Welcome Back, @UserName</h1>
-            <p class="page-subtitle">Welcome to OfficialLedger.</p>
+            <p class="page-subtitle">@selectedSeasonDateRange</p>
         </div>
 
         <div class="season-picker">
@@ -55,6 +55,7 @@
     private List<Season> seasons = new();
     private bool isSeasonMenuOpen;
     private string selectedSeasonName = "2024 Baseball Season";
+    private string selectedSeasonDateRange = "Welcome to OfficialLedger.";
 
     private void ToggleSeasonMenu()
     {
@@ -64,7 +65,13 @@
     private void SelectSeason(Season season)
     {
         selectedSeasonName = season.Name;
+        selectedSeasonDateRange = FormatSeasonDateRange(season);
         isSeasonMenuOpen = false;
+    }
+
+    private static string FormatSeasonDateRange(Season season)
+    {
+        return $"{season.StartDate:MMM d ''yy} - {season.EndDate:MMM d ''yy}";
     }
 
     private string UserName = "User";
@@ -87,13 +94,13 @@
         UserName = name;
 
         seasons = await Db.Seasons
-            .OrderBy(x => x.Name)
+            .OrderBy(x => x.StartDate)
             .ToListAsync();
 
         if (seasons.Any())
         {
             selectedSeasonName = seasons[0].Name;
+            selectedSeasonDateRange = FormatSeasonDateRange(seasons[0]);
         }
     }
 }
-
