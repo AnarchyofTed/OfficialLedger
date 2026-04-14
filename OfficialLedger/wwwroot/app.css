@@ -894,8 +894,9 @@ input[readonly] {
 .dashboard-metrics {
     margin-top: 10px;
     display: flex;
+    gap: 16px;
+    align-items: stretch;
     flex-wrap: wrap;
-    gap: 14px;
 }
 
 .metric-card {
@@ -940,6 +941,14 @@ input[readonly] {
     vertical-align: baseline;
 }
 
+.metric-value-outstanding {
+    color: #ef7b51;
+    margin: 6px 0 0;
+    font-size: 2.15rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
 @media (max-width: 768px) {
     .dashboard-header {
         align-items: stretch;
@@ -953,5 +962,6 @@ input[readonly] {
 
     .metric-card {
         max-width: 100%;
+        flex: 1 1 100%;
     }
 }

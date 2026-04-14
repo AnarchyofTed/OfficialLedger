@@ -59,6 +59,12 @@
         <p class="metric-value">@totalEarnings.ToString("C")</p>
         <p class="metric-subtext">@totalGames @(totalGames == 1 ? "game" : "games")</p>
     </article>
+
+    <article class="metric-card">
+        <p class="metric-label">Outstanding Pay</p>
+        <p class="metric-value metric-value-outstanding">@outstandingPayAmount.ToString("C")</p>
+        <p class="metric-subtext">@unpaidGames @(unpaidGames == 1 ? "game" : "games")</p>
+    </article>
     <article class="metric-card">
         <p class="metric-label">Miles Driven</p>
         <p class="metric-value metric-value-neutral">
@@ -77,6 +83,8 @@
     private decimal totalEarnings;
     private decimal totalMilesDriven;
     private int totalGames;
+    private decimal outstandingPayAmount;
+    private int unpaidGames;
     private string? userId;
 
     private void ToggleSeasonMenu()
@@ -142,6 +150,8 @@
             totalEarnings = 0;
             totalMilesDriven = 0;
             totalGames = 0;
+            outstandingPayAmount = 0;
+            unpaidGames = 0;
             return;
         }
 
@@ -162,5 +172,9 @@
         totalEarnings = await query.SumAsync(x => x.FeeAmount);
         totalMilesDriven = await query.SumAsync(x => x.MilesDriven);
         totalGames = await query.CountAsync();
+
+        var unpaidQuery = query.Where(x => !x.IsPaid);
+        outstandingPayAmount = await unpaidQuery.SumAsync(x => x.FeeAmount);
+        unpaidGames = await unpaidQuery.CountAsync();
     }
 }
