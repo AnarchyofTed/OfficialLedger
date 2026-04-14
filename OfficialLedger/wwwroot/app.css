@@ -893,6 +893,9 @@ input[readonly] {
 
 .dashboard-metrics {
     margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
 }
 
 .metric-card {
@@ -923,6 +926,18 @@ input[readonly] {
     margin: 6px 0 0;
     color: #667085;
     font-size: 0.98rem;
+}
+
+.metric-value-neutral {
+    color: #1f2937;
+}
+
+.metric-value-unit {
+    color: #9fb9ea;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-left: 4px;
+    vertical-align: baseline;
 }
 
 @media (max-width: 768px) {

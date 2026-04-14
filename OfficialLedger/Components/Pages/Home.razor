@@ -59,6 +59,14 @@
         <p class="metric-value">@totalEarnings.ToString("C")</p>
         <p class="metric-subtext">@totalGames @(totalGames == 1 ? "game" : "games")</p>
     </article>
+    <article class="metric-card">
+        <p class="metric-label">Miles Driven</p>
+        <p class="metric-value metric-value-neutral">
+            @totalMilesDriven.ToString("N0")
+            <span class="metric-value-unit">Mi</span>
+        </p>
+        <p class="metric-subtext">Across @totalGames @(totalGames == 1 ? "game" : "games")</p>
+    </article>
 </section>
 
 @code {
@@ -67,6 +75,7 @@
     private string selectedSeasonName = "2024 Baseball Season";
     private string selectedSeasonDateRange = "Welcome to OfficialLedger.";
     private decimal totalEarnings;
+    private decimal totalMilesDriven;
     private int totalGames;
     private string? userId;
 
@@ -131,6 +140,7 @@
         if (string.IsNullOrWhiteSpace(userId))
         {
             totalEarnings = 0;
+            totalMilesDriven = 0;
             totalGames = 0;
             return;
         }
@@ -150,6 +160,7 @@
             (!seasonStart.HasValue || (x.GameDate >= seasonStart.Value && x.GameDate < seasonEnd!.Value)));
 
         totalEarnings = await query.SumAsync(x => x.FeeAmount);
+        totalMilesDriven = await query.SumAsync(x => x.MilesDriven);
         totalGames = await query.CountAsync();
     }
 }
