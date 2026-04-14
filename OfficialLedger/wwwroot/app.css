@@ -960,9 +960,9 @@ input[readonly] {
 
 .attention-card-header h2 {
     margin: 0;
-    color: #1f2b45;
+    color: #667085;
     font-size: 2rem;
-    font-weight: 700;
+    font-weight:550;
 }
 
 .attention-card-header p {
