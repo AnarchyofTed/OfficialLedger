@@ -893,6 +893,10 @@ input[readonly] {
 
 .dashboard-metrics {
     margin-top: 10px;
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+    flex-wrap: wrap;
 }
 
 .metric-card {
@@ -925,6 +929,10 @@ input[readonly] {
     font-size: 0.98rem;
 }
 
+.metric-value-outstanding {
+    color: #ef7b51;
+}
+
 @media (max-width: 768px) {
     .dashboard-header {
         align-items: stretch;
@@ -938,5 +946,6 @@ input[readonly] {
 
     .metric-card {
         max-width: 100%;
+        flex: 1 1 100%;
     }
 }
