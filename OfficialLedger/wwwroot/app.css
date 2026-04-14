@@ -441,7 +441,7 @@ a {
 .page-title {
     margin: 0;
     font-size: 2.2rem;
-    font-weight: 700;
+    font-weight: 500;
     color: #1f2937;
 }
 
@@ -911,7 +911,7 @@ input[readonly] {
 .metric-label {
     margin: 0;
     color: #667085;
-    font-size: 0.9rem;
+    font-size: 1.55rem;
     font-weight: 600;
 }
 
@@ -927,6 +927,18 @@ input[readonly] {
     margin: 6px 0 0;
     color: #667085;
     font-size: 0.98rem;
+}
+
+.metric-value-neutral {
+    color: #667085;
+}
+
+.metric-value-unit {
+    color: #9fb9ea;
+    font-size: 1.85rem;
+    font-weight: 700;
+    margin-left: 4px;
+    vertical-align: baseline;
 }
 
 .metric-value-outstanding {
