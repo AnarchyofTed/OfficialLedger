@@ -259,13 +259,35 @@
             .GroupBy(x => x.GameDate)
             .ToDictionary(g => g.Key, g => g.Sum(x => x.FeeAmount));
 
-        var points = new List<(DateTime Date, decimal Value)>();
-        for (var day = seasonStart; day <= seasonEnd; day = day.AddDays(1))
+        var points = byDate
+            .OrderBy(x => x.Key)
+            .Select(x => (Date: x.Key, Value: x.Value))
+            .ToList();
+
+        if (!points.Any())
         {
-            points.Add((day, byDate.TryGetValue(day, out var value) ? value : 0));
+            points.Add((seasonStart, 0));
+            if (seasonEnd > seasonStart)
+            {
+                points.Add((seasonEnd, 0));
+            }
+        }
+        else
+        {
+            var firstPoint = points.First();
+            if (firstPoint.Date > seasonStart)
+            {
+                points.Insert(0, (seasonStart, firstPoint.Value));
+            }
+
+            var lastPoint = points.Last();
+            if (lastPoint.Date < seasonEnd)
+            {
+                points.Add((seasonEnd, lastPoint.Value));
+            }
         }
 
-        BuildChartPaths(points);
+        BuildChartPaths(points, seasonStart, seasonEnd);
         BuildXAxisLabels(seasonStart, seasonEnd);
 
         var today = DateTime.Today;
@@ -277,7 +299,7 @@
             .Sum(x => x.FeeAmount);
     }
 
-    private void BuildChartPaths(List<(DateTime Date, decimal Value)> points)
+    private void BuildChartPaths(List<(DateTime Date, decimal Value)> points, DateTime seasonStart, DateTime seasonEnd)
     {
         if (!points.Any())
         {
@@ -300,9 +322,12 @@
         var spanX = chartPaddingRightEdge - chartPaddingLeft;
         var spanY = (chartHeight - chartPaddingBottom) - chartPaddingTop;
 
-        var chartPoints = points.Select((point, index) =>
+        var totalDays = Math.Max(1, (decimal)(seasonEnd - seasonStart).TotalDays);
+
+        var chartPoints = points.Select(point =>
         {
-            var x = chartPaddingLeft + (points.Count == 1 ? 0 : spanX * index / (points.Count - 1));
+            var dayOffset = (decimal)(point.Date - seasonStart).TotalDays;
+            var x = chartPaddingLeft + (spanX * dayOffset / totalDays);
             var ratio = topTick == 0 ? 0 : point.Value / topTick;
             var y = (chartHeight - chartPaddingBottom) - (spanY * ratio);
             return (x, y);
