@@ -4,7 +4,7 @@
 
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
-@using System.Text.RegularExpressions
+@using System.Globalization
 @using OfficialLedger.Data
 @using OfficialLedger.Models
 
@@ -75,6 +75,45 @@
     </article>
 </section>
 
+<section class="dashboard-earnings-chart">
+    <header class="earnings-chart-header">
+        <div>
+            <p class="earnings-chart-title">Earnings Over Time</p>
+        </div>
+        <div class="earnings-chart-week">
+            <p class="earnings-chart-week-value">@currentWeekEarnings.ToString("C")</p>
+            <p class="earnings-chart-week-label">This Week (Ending @currentWeekEndingDate:MMM d)</p>
+        </div>
+    </header>
+
+    <div class="earnings-chart-plot">
+        <svg viewBox="0 0 @chartWidth @chartHeight" role="img" aria-label="Earnings over time chart">
+            @foreach (var yTick in yAxisTicks)
+            {
+                <line class="chart-grid-line" x1="@chartPaddingLeft" y1="@GetYPosition(yTick)" x2="@chartPaddingRightEdge" y2="@GetYPosition(yTick)" />
+                <text class="chart-y-label" x="12" y="@GetYPosition(yTick)" dy="5">@yTick.ToString("C0", CultureInfo.CurrentCulture)</text>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(chartAreaPath))
+            {
+                <path d="@chartAreaPath" class="chart-area-path" />
+            }
+
+            @if (!string.IsNullOrWhiteSpace(chartLinePath))
+            {
+                <path d="@chartLinePath" class="chart-line-path" />
+            }
+        </svg>
+    </div>
+
+    <div class="chart-x-labels">
+        @foreach (var xLabel in xAxisLabels)
+        {
+            <span>@xLabel</span>
+        }
+    </div>
+</section>
+
 @code {
     private List<Season> seasons = new();
     private bool isSeasonMenuOpen;
@@ -86,6 +125,20 @@
     private decimal outstandingPayAmount;
     private int unpaidGames;
     private string? userId;
+    private Season? selectedSeason;
+    private decimal currentWeekEarnings;
+    private DateTime currentWeekEndingDate = DateTime.Today;
+    private List<decimal> yAxisTicks = new();
+    private List<string> xAxisLabels = new();
+    private string chartLinePath = string.Empty;
+    private string chartAreaPath = string.Empty;
+    private const decimal chartWidth = 860m;
+    private const decimal chartHeight = 260m;
+    private const decimal chartPaddingLeft = 52m;
+    private const decimal chartPaddingTop = 14m;
+    private const decimal chartPaddingBottom = 40m;
+    private const decimal chartPaddingRight = 12m;
+    private decimal chartPaddingRightEdge => chartWidth - chartPaddingRight;
 
     private void ToggleSeasonMenu()
     {
@@ -96,6 +149,7 @@
     {
         selectedSeasonName = season.Name;
         selectedSeasonDateRange = FormatSeasonDateRange(season);
+        selectedSeason = season;
         isSeasonMenuOpen = false;
         await LoadTotalEarningsAsync();
     }
@@ -136,8 +190,9 @@
 
         if (seasons.Any())
         {
-            selectedSeasonName = seasons[0].Name;
-            selectedSeasonDateRange = FormatSeasonDateRange(seasons[0]);
+            selectedSeason = seasons[0];
+            selectedSeasonName = selectedSeason.Name;
+            selectedSeasonDateRange = FormatSeasonDateRange(selectedSeason);
         }
 
         await LoadTotalEarningsAsync();
@@ -155,19 +210,9 @@
             return;
         }
 
-        DateTime? seasonStart = null;
-        DateTime? seasonEnd = null;
-
-        var seasonYearMatch = Regex.Match(selectedSeasonName, @"\b(19|20)\d{2}\b");
-        if (seasonYearMatch.Success && int.TryParse(seasonYearMatch.Value, out var seasonYear))
-        {
-            seasonStart = new DateTime(seasonYear, 1, 1);
-            seasonEnd = seasonStart.Value.AddYears(1);
-        }
-
         var query = Db.Games.Where(x =>
             x.UserId == userId &&
-            (!seasonStart.HasValue || (x.GameDate >= seasonStart.Value && x.GameDate < seasonEnd!.Value)));
+            (selectedSeason == null || (x.GameDate >= selectedSeason.StartDate && x.GameDate <= selectedSeason.EndDate)));
 
         totalEarnings = await query.SumAsync(x => x.FeeAmount);
         totalMilesDriven = await query.SumAsync(x => x.MilesDriven);
@@ -176,5 +221,156 @@
         var unpaidQuery = query.Where(x => !x.IsPaid);
         outstandingPayAmount = await unpaidQuery.SumAsync(x => x.FeeAmount);
         unpaidGames = await unpaidQuery.CountAsync();
+
+        await LoadChartDataAsync(query);
+    }
+
+    private async Task LoadChartDataAsync(IQueryable<Game> baseQuery)
+    {
+        if (selectedSeason is null)
+        {
+            yAxisTicks = new() { 0 };
+            xAxisLabels = new();
+            chartLinePath = string.Empty;
+            chartAreaPath = string.Empty;
+            currentWeekEarnings = 0;
+            currentWeekEndingDate = DateTime.Today;
+            return;
+        }
+
+        var seasonStart = selectedSeason.StartDate.Date;
+        var seasonEnd = selectedSeason.EndDate.Date;
+
+        var allGames = await baseQuery
+            .Select(x => new { GameDate = x.GameDate.Date, x.FeeAmount })
+            .ToListAsync();
+
+        var byDate = allGames
+            .GroupBy(x => x.GameDate)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.FeeAmount));
+
+        var points = new List<(DateTime Date, decimal Value)>();
+        for (var day = seasonStart; day <= seasonEnd; day = day.AddDays(1))
+        {
+            points.Add((day, byDate.TryGetValue(day, out var value) ? value : 0));
+        }
+
+        BuildChartPaths(points);
+        BuildXAxisLabels(seasonStart, seasonEnd);
+
+        var today = DateTime.Today;
+        var daysToMonday = ((int)today.DayOfWeek + 6) % 7;
+        var weekStart = today.AddDays(-daysToMonday).Date;
+        currentWeekEndingDate = weekStart.AddDays(6);
+        currentWeekEarnings = allGames
+            .Where(x => x.GameDate >= weekStart && x.GameDate <= currentWeekEndingDate)
+            .Sum(x => x.FeeAmount);
+    }
+
+    private void BuildChartPaths(List<(DateTime Date, decimal Value)> points)
+    {
+        if (!points.Any())
+        {
+            yAxisTicks = new() { 0 };
+            chartLinePath = string.Empty;
+            chartAreaPath = string.Empty;
+            return;
+        }
+
+        var maxValue = points.Max(x => x.Value);
+        var topTick = maxValue <= 0 ? 100 : Math.Ceiling(maxValue / 100m) * 100m;
+        yAxisTicks = Enumerable.Range(0, 4)
+            .Select(i => Math.Round(topTick * i / 3m, 0))
+            .Distinct()
+            .OrderByDescending(x => x)
+            .ToList();
+
+        var spanX = chartPaddingRightEdge - chartPaddingLeft;
+        var spanY = (chartHeight - chartPaddingBottom) - chartPaddingTop;
+
+        var chartPoints = points.Select((point, index) =>
+        {
+            var x = chartPaddingLeft + (points.Count == 1 ? 0 : spanX * index / (points.Count - 1));
+            var ratio = topTick == 0 ? 0 : point.Value / topTick;
+            var y = (chartHeight - chartPaddingBottom) - (spanY * ratio);
+            return (x, y);
+        }).ToList();
+
+        chartLinePath = BuildSmoothPath(chartPoints);
+
+        if (!string.IsNullOrWhiteSpace(chartLinePath))
+        {
+            var first = chartPoints.First();
+            var last = chartPoints.Last();
+            chartAreaPath = $"{chartLinePath} L {last.x.ToString("0.##", CultureInfo.InvariantCulture)} {(chartHeight - chartPaddingBottom).ToString("0.##", CultureInfo.InvariantCulture)} L {first.x.ToString("0.##", CultureInfo.InvariantCulture)} {(chartHeight - chartPaddingBottom).ToString("0.##", CultureInfo.InvariantCulture)} Z";
+        }
+    }
+
+    private static string BuildSmoothPath(List<(decimal x, decimal y)> points)
+    {
+        if (points.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        if (points.Count == 1)
+        {
+            var p = points[0];
+            return $"M {p.x.ToString("0.##", CultureInfo.InvariantCulture)} {p.y.ToString("0.##", CultureInfo.InvariantCulture)}";
+        }
+
+        var path = $"M {points[0].x.ToString("0.##", CultureInfo.InvariantCulture)} {points[0].y.ToString("0.##", CultureInfo.InvariantCulture)}";
+
+        for (var i = 0; i < points.Count - 1; i++)
+        {
+            var p0 = i > 0 ? points[i - 1] : points[i];
+            var p1 = points[i];
+            var p2 = points[i + 1];
+            var p3 = i + 2 < points.Count ? points[i + 2] : p2;
+
+            var c1x = p1.x + (p2.x - p0.x) / 6m;
+            var c1y = p1.y + (p2.y - p0.y) / 6m;
+            var c2x = p2.x - (p3.x - p1.x) / 6m;
+            var c2y = p2.y - (p3.y - p1.y) / 6m;
+
+            path += $" C {c1x.ToString("0.##", CultureInfo.InvariantCulture)} {c1y.ToString("0.##", CultureInfo.InvariantCulture)} {c2x.ToString("0.##", CultureInfo.InvariantCulture)} {c2y.ToString("0.##", CultureInfo.InvariantCulture)} {p2.x.ToString("0.##", CultureInfo.InvariantCulture)} {p2.y.ToString("0.##", CultureInfo.InvariantCulture)}";
+        }
+
+        return path;
+    }
+
+    private void BuildXAxisLabels(DateTime startDate, DateTime endDate)
+    {
+        if (startDate >= endDate)
+        {
+            xAxisLabels = new() { startDate.ToString("MMM d") };
+            return;
+        }
+
+        var desiredLabels = 6;
+        var totalDays = (endDate - startDate).Days;
+        var step = Math.Max(1, (int)Math.Round(totalDays / (double)(desiredLabels - 1)));
+
+        var labels = new List<string> { startDate.ToString("MMM d") };
+        for (var offset = step; offset < totalDays; offset += step)
+        {
+            labels.Add(startDate.AddDays(offset).ToString("MMM d"));
+        }
+
+        labels.Add(endDate.ToString("MMM d"));
+        xAxisLabels = labels.Distinct().ToList();
+    }
+
+    private decimal GetYPosition(decimal tickValue)
+    {
+        if (!yAxisTicks.Any())
+        {
+            return chartHeight - chartPaddingBottom;
+        }
+
+        var maxTick = yAxisTicks.Max();
+        var spanY = (chartHeight - chartPaddingBottom) - chartPaddingTop;
+        var ratio = maxTick == 0 ? 0 : tickValue / maxTick;
+        return (chartHeight - chartPaddingBottom) - (spanY * ratio);
     }
 }

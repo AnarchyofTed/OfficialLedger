@@ -897,6 +897,7 @@ input[readonly] {
     gap: 16px;
     align-items: stretch;
     flex-wrap: wrap;
+    max-width: 872px;
 }
 
 .metric-card {
@@ -906,6 +907,92 @@ input[readonly] {
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
     padding: 18px 20px;
     max-width: 280px;
+    width: 280px;
+}
+
+.dashboard-earnings-chart {
+    margin-top: 18px;
+    max-width: 872px;
+    background: #ffffff;
+    border: 1px solid #dbe4f0;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    padding: 16px 16px 12px;
+}
+
+.earnings-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.earnings-chart-title {
+    margin: 0;
+    color: #3d4b61;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.earnings-chart-week {
+    text-align: right;
+}
+
+.earnings-chart-week-value {
+    margin: 0;
+    color: #1f7a4f;
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1.05;
+}
+
+.earnings-chart-week-label {
+    margin: 2px 0 0;
+    color: #667085;
+    font-size: 0.88rem;
+}
+
+.earnings-chart-plot {
+    margin-top: 10px;
+}
+
+.earnings-chart-plot svg {
+    width: 100%;
+    height: auto;
+}
+
+.chart-grid-line {
+    stroke: #e8edf5;
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+}
+
+.chart-y-label {
+    fill: #7b8797;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.chart-area-path {
+    fill: rgba(127, 166, 232, 0.25);
+}
+
+.chart-line-path {
+    fill: none;
+    stroke: #7fa6e8;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.chart-x-labels {
+    margin: 2px 8px 0 52px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: #7b8797;
+    font-size: 0.82rem;
+    font-weight: 600;
 }
 
 .metric-label {
@@ -963,5 +1050,20 @@ input[readonly] {
     .metric-card {
         max-width: 100%;
         flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .dashboard-metrics,
+    .dashboard-earnings-chart {
+        max-width: 100%;
+    }
+
+    .earnings-chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .earnings-chart-week {
+        text-align: left;
     }
 }
