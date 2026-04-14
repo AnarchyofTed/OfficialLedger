@@ -91,7 +91,6 @@
             @foreach (var yTick in yAxisTicks)
             {
                 <line class="chart-grid-line" x1="@chartPaddingLeft" y1="@GetYPosition(yTick)" x2="@chartPaddingRightEdge" y2="@GetYPosition(yTick)" />
-                <text class="chart-y-label" x="12" y="@GetYPosition(yTick)" dy="5">@yTick.ToString("C0", CultureInfo.CurrentCulture)</text>
             }
 
             @if (!string.IsNullOrWhiteSpace(chartAreaPath))
@@ -104,6 +103,15 @@
                 <path d="@chartLinePath" class="chart-line-path" />
             }
         </svg>
+
+        <div class="chart-y-labels">
+            @foreach (var yAxisLabel in yAxisLabelEntries)
+            {
+                <span class="chart-y-label" style="@($"top: {yAxisLabel.TopPercent.ToString("0.##", CultureInfo.InvariantCulture)}%;")">
+                    @yAxisLabel.DisplayValue
+                </span>
+            }
+        </div>
     </div>
 
     <div class="chart-x-labels">
@@ -130,6 +138,7 @@
     private DateTime currentWeekEndingDate = DateTime.Today;
     private List<decimal> yAxisTicks = new();
     private List<string> xAxisLabels = new();
+    private List<YAxisLabel> yAxisLabelEntries = new();
     private string chartLinePath = string.Empty;
     private string chartAreaPath = string.Empty;
     private const decimal chartWidth = 860m;
@@ -231,6 +240,7 @@
         {
             yAxisTicks = new() { 0 };
             xAxisLabels = new();
+            yAxisLabelEntries = new();
             chartLinePath = string.Empty;
             chartAreaPath = string.Empty;
             currentWeekEarnings = 0;
@@ -272,6 +282,7 @@
         if (!points.Any())
         {
             yAxisTicks = new() { 0 };
+            yAxisLabelEntries = BuildYAxisLabelEntries();
             chartLinePath = string.Empty;
             chartAreaPath = string.Empty;
             return;
@@ -284,6 +295,7 @@
             .Distinct()
             .OrderByDescending(x => x)
             .ToList();
+        yAxisLabelEntries = BuildYAxisLabelEntries();
 
         var spanX = chartPaddingRightEdge - chartPaddingLeft;
         var spanY = (chartHeight - chartPaddingBottom) - chartPaddingTop;
@@ -373,4 +385,21 @@
         var ratio = maxTick == 0 ? 0 : tickValue / maxTick;
         return (chartHeight - chartPaddingBottom) - (spanY * ratio);
     }
+
+    private List<YAxisLabel> BuildYAxisLabelEntries()
+    {
+        if (!yAxisTicks.Any())
+        {
+            return new();
+        }
+
+        return yAxisTicks.Select(tick =>
+        {
+            var y = GetYPosition(tick);
+            var topPercent = (y / chartHeight) * 100m;
+            return new YAxisLabel(tick.ToString("C0", CultureInfo.CurrentCulture), topPercent);
+        }).ToList();
+    }
+
+    private sealed record YAxisLabel(string DisplayValue, decimal TopPercent);
 }

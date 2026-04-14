@@ -954,6 +954,7 @@ input[readonly] {
 
 .earnings-chart-plot {
     margin-top: 10px;
+    position: relative;
 }
 
 .earnings-chart-plot svg {
@@ -968,9 +969,19 @@ input[readonly] {
 }
 
 .chart-y-label {
-    fill: #7b8797;
+    color: #7b8797;
     font-size: 11px;
     font-weight: 600;
+    position: absolute;
+    left: 8px;
+    transform: translateY(-50%);
+    line-height: 1;
+}
+
+.chart-y-labels {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
 }
 
 .chart-area-path {
