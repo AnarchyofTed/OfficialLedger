@@ -9,6 +9,7 @@
 @using OfficialLedger.Models
 
 @inject ApplicationDbContext Db
+@inject NavigationManager NavigationManager
 
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
@@ -82,7 +83,36 @@
     </div>
 
     <div class="attention-card-grid">
-        <div class="attention-card-slot" aria-label="Who Still Owes Me card placeholder"></div>
+        <div class="attention-card-slot" aria-label="Who Still Owes Me card">
+            <div class="owes-card-header">
+                <h3>Who Still Owes Me</h3>
+                <p class="metric-value-outstanding">@outstandingPayAmount.ToString("C")</p>
+            </div>
+
+            @if (!unpaidGamesList.Any())
+            {
+                <p class="owes-empty-state">No unpaid games in this season.</p>
+            }
+            else
+            {
+                <ul class="owes-list">
+                    @foreach (var game in unpaidGamesList)
+                    {
+                        <li class="owes-list-item">
+                            <div class="owes-list-main">
+                                <p class="owes-list-name">@game.LocationName</p>
+                                <p class="owes-list-details">@game.GameDate.ToString("MMM d, yyyy") • @game.FeeAmount.ToString("C")</p>
+                            </div>
+                            <button type="button" class="owes-mark-paid-btn" @onclick="() => MarkGameAsPaidAsync(game.Id)">
+                                Mark as Paid
+                            </button>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <button type="button" class="owes-see-all-btn" @onclick="GoToGames">See all</button>
+        </div>
         <div class="attention-card-slot" aria-label="Recent Games card placeholder"></div>
     </div>
 </section>
@@ -97,6 +127,7 @@
     private int totalGames;
     private decimal outstandingPayAmount;
     private int unpaidGames;
+    private List<Game> unpaidGamesList = new();
     private string? userId;
 
     private void ToggleSeasonMenu()
@@ -164,6 +195,7 @@
             totalGames = 0;
             outstandingPayAmount = 0;
             unpaidGames = 0;
+            unpaidGamesList.Clear();
             return;
         }
 
@@ -188,5 +220,28 @@
         var unpaidQuery = query.Where(x => !x.IsPaid);
         outstandingPayAmount = await unpaidQuery.SumAsync(x => x.FeeAmount);
         unpaidGames = await unpaidQuery.CountAsync();
+        unpaidGamesList = await unpaidQuery
+            .OrderBy(x => x.GameDate)
+            .ToListAsync();
+    }
+
+    private async Task MarkGameAsPaidAsync(int gameId)
+    {
+        var game = await Db.Games
+            .FirstOrDefaultAsync(x => x.Id == gameId && x.UserId == userId);
+
+        if (game is null)
+        {
+            return;
+        }
+
+        game.IsPaid = true;
+        await Db.SaveChangesAsync();
+        await LoadTotalEarningsAsync();
+    }
+
+    private void GoToGames()
+    {
+        NavigationManager.NavigateTo("/games");
     }
 }
