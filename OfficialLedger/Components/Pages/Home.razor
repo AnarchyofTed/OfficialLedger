@@ -98,14 +98,14 @@
             else
             {
                 <ul class="owes-list">
-                    @foreach (var game in unpaidGamesList)
+                    @foreach (var row in unpaidGamesList)
                     {
                         <li class="owes-list-item">
                             <div class="owes-list-main">
-                                <p class="owes-list-name">@game.LocationName</p>
-                                <p class="owes-list-details">@game.GameDate.ToString("MMM d, yyyy") • @game.FeeAmount.ToString("C")</p>
+                                <p class="owes-list-name">@row.LocationName</p>
+                                <p class="owes-list-details">@row.GameDate.ToString("MMM d, yyyy") • @row.TotalAmount.ToString("C")</p>
                             </div>
-                            <button type="button" class="owes-mark-paid-btn" @onclick="() => MarkGameAsPaidAsync(game.Id)">
+                            <button type="button" class="owes-mark-paid-btn" @onclick="() => MarkGameAsPaidAsync(row.GameIds)">
                                 Mark as Paid
                             </button>
                         </li>
@@ -129,7 +129,7 @@
     private int totalGames;
     private decimal outstandingPayAmount;
     private int unpaidGames;
-    private List<Game> unpaidGamesList = new();
+    private List<UnpaidGameGroupRow> unpaidGamesList = new();
     private string? userId;
 
     private void ToggleSeasonMenu()
@@ -222,22 +222,50 @@
         var unpaidQuery = query.Where(x => !x.IsPaid);
         outstandingPayAmount = await unpaidQuery.SumAsync(x => x.FeeAmount);
         unpaidGames = await unpaidQuery.CountAsync();
-        unpaidGamesList = await unpaidQuery
+        var unpaidGames = await unpaidQuery
             .OrderBy(x => x.GameDate)
             .ToListAsync();
+
+        unpaidGamesList = unpaidGames
+            .GroupBy(x => new
+            {
+                GameDate = x.GameDate.Date,
+                LocationName = x.LocationName.Trim()
+            })
+            .OrderBy(x => x.Key.GameDate)
+            .ThenBy(x => x.Key.LocationName)
+            .Select(x => new UnpaidGameGroupRow
+            {
+                GameDate = x.Key.GameDate,
+                LocationName = x.Key.LocationName,
+                TotalAmount = x.Sum(g => g.FeeAmount),
+                GameIds = x.Select(g => g.Id).ToList()
+            })
+            .Take(3)
+            .ToList();
     }
 
-    private async Task MarkGameAsPaidAsync(int gameId)
+    private async Task MarkGameAsPaidAsync(List<int> gameIds)
     {
-        var game = await Db.Games
-            .FirstOrDefaultAsync(x => x.Id == gameId && x.UserId == userId);
-
-        if (game is null)
+        if (!gameIds.Any())
         {
             return;
         }
 
-        game.IsPaid = true;
+        var games = await Db.Games
+            .Where(x => x.UserId == userId && gameIds.Contains(x.Id))
+            .ToListAsync();
+
+        if (!games.Any())
+        {
+            return;
+        }
+
+        foreach (var game in games)
+        {
+            game.IsPaid = true;
+        }
+
         await Db.SaveChangesAsync();
         await LoadTotalEarningsAsync();
     }
@@ -245,5 +273,13 @@
     private void GoToGames()
     {
         NavigationManager.NavigateTo("/games");
+    }
+
+    private sealed class UnpaidGameGroupRow
+    {
+        public DateTime GameDate { get; set; }
+        public string LocationName { get; set; } = string.Empty;
+        public decimal TotalAmount { get; set; }
+        public List<int> GameIds { get; set; } = new();
     }
 }
