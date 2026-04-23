@@ -221,12 +221,12 @@
 
         var unpaidQuery = query.Where(x => !x.IsPaid);
         outstandingPayAmount = await unpaidQuery.SumAsync(x => x.FeeAmount);
-        unpaidGames = await unpaidQuery.CountAsync();
-        var unpaidGames = await unpaidQuery
+        
+       var unpaidListToQuery = await unpaidQuery
             .OrderBy(x => x.GameDate)
             .ToListAsync();
 
-        unpaidGamesList = unpaidGames
+        unpaidGamesList = unpaidListToQuery
             .GroupBy(x => new
             {
                 GameDate = x.GameDate.Date,
