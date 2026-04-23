@@ -984,6 +984,88 @@ input[readonly] {
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.75);
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    padding: 14px;
+}
+
+.owes-card-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.owes-card-header h3 {
+    margin: 0;
+    color: #667085;
+    font-size: 1.2rem;
+    font-weight: 650;
+}
+
+.owes-card-header .metric-value-outstanding {
+    margin: 0;
+}
+
+.owes-empty-state {
+    margin: 14px 0;
+    color: #667085;
+}
+
+.owes-list {
+    list-style: none;
+    margin: 12px 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.owes-list-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    border: 1px solid #e2e8f4;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 10px;
+}
+
+.owes-list-main {
+    min-width: 0;
+}
+
+.owes-list-name {
+    margin: 0;
+    color: #334155;
+    font-weight: 600;
+}
+
+.owes-list-details {
+    margin: 4px 0 0;
+    color: #667085;
+    font-size: 0.92rem;
+}
+
+.owes-mark-paid-btn,
+.owes-see-all-btn {
+    border: 1px solid #c9d8ee;
+    background: #f8fbff;
+    color: #365c90;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 7px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.owes-mark-paid-btn:hover,
+.owes-see-all-btn:hover {
+    background: #eef5ff;
+}
+
+.owes-see-all-btn {
+    margin-top: 8px;
 }
 
 @media (max-width: 768px) {
