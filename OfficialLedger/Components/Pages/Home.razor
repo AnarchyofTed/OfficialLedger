@@ -118,7 +118,6 @@
         <div class="attention-card-slot" aria-label="Recent Games card">
             <div class="recent-games-header">
                 <h3>Recent Games</h3>
-                <p>Top 3 most recent games</p>
             </div>
 
             @if (!recentGames.Any())
@@ -129,7 +128,7 @@
             {
                 <div class="recent-games-table">
                     <div class="recent-games-table-header">
-                        <span>Game</span>
+                        <span>Last 5 Games</span>
                         <span>Earnings</span>
                         <span>Status</span>
                     </div>
@@ -138,7 +137,8 @@
                         @foreach (var row in recentGames)
                         {
                             <li class="recent-games-row">
-                                <p class="recent-games-name">@row.GameDate.ToString("M/d") @row.LocationName</p>
+                                <p class="recent-games-date">@row.GameDate.ToString("M/d")</p>
+                                <p class="recent-games-name"> @row.LocationName</p>
                                 <p class="recent-games-earnings">@row.Earnings.ToString("C0")</p>
                                 <span class="recent-games-status @(row.IsPaid ? "paid" : "unpaid")">
                                     @(row.IsPaid ? "Paid" : "Unpaid")

@@ -1025,11 +1025,12 @@ input[readonly] {
 .recent-games-table-header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 12px;
+    gap: 35px;
     color: #667085;
     font-size: 0.9rem;
     border-bottom: 1px solid #e2e8f4;
     padding: 0 0 8px;
+    padding-right: 20px;
 }
 
 .recent-games-list {
@@ -1040,11 +1041,16 @@ input[readonly] {
 
 .recent-games-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: auto minmax(0,1fr) auto auto;
     align-items: center;
     gap: 12px;
     border-bottom: 1px solid #edf1f7;
     padding: 10px 0;
+}
+.recent-games-date {
+    margin: 0;
+    color: #667085;
+    font-weight: 400;
 }
 
 .recent-games-name {
