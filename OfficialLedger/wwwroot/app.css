@@ -1005,6 +1005,86 @@ input[readonly] {
     margin: 0;
 }
 
+.recent-games-header h3 {
+    margin: 0;
+    color: #334155;
+    font-size: 1.5rem;
+    font-weight: 650;
+}
+
+.recent-games-header p {
+    margin: 4px 0 0;
+    color: #667085;
+    font-size: 1.05rem;
+}
+
+.recent-games-table {
+    margin-top: 12px;
+}
+
+.recent-games-table-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 35px;
+    color: #667085;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #e2e8f4;
+    padding: 0 0 8px;
+    padding-right: 20px;
+}
+
+.recent-games-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.recent-games-row {
+    display: grid;
+    grid-template-columns: auto minmax(0,1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #edf1f7;
+    padding: 10px 0;
+}
+.recent-games-date {
+    margin: 0;
+    color: #667085;
+    font-weight: 400;
+}
+
+.recent-games-name {
+    margin: 0;
+    color: #334155;
+    font-weight: 500;
+}
+
+.recent-games-earnings {
+    margin: 0;
+    color: #1f2937;
+    font-weight: 650;
+}
+
+.recent-games-status {
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1;
+    min-width: 82px;
+    text-align: center;
+}
+
+.recent-games-status.paid {
+    background: linear-gradient(90deg, #5da7ad 0%, #4e949b 100%);
+    color: #ffffff;
+}
+
+.recent-games-status.unpaid {
+    background: linear-gradient(90deg, #f6bc80 0%, #e3a15a 100%);
+    color: #ffffff;
+}
+
 .owes-empty-state {
     margin: 14px 0;
     color: #667085;

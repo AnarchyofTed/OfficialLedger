@@ -115,7 +115,42 @@
 
             <button type="button" class="owes-see-all-btn" @onclick="GoToGames">See all</button>
         </div>
-        <div class="attention-card-slot" aria-label="Recent Games card placeholder"></div>
+        <div class="attention-card-slot" aria-label="Recent Games card">
+            <div class="recent-games-header">
+                <h3>Recent Games</h3>
+            </div>
+
+            @if (!recentGames.Any())
+            {
+                <p class="owes-empty-state">No games in this season yet.</p>
+            }
+            else
+            {
+                <div class="recent-games-table">
+                    <div class="recent-games-table-header">
+                        <span>Last 5 Games</span>
+                        <span>Earnings</span>
+                        <span>Status</span>
+                    </div>
+
+                    <ul class="recent-games-list">
+                        @foreach (var row in recentGames)
+                        {
+                            <li class="recent-games-row">
+                                <p class="recent-games-date">@row.GameDate.ToString("M/d")</p>
+                                <p class="recent-games-name"> @row.LocationName</p>
+                                <p class="recent-games-earnings">@row.Earnings.ToString("C0")</p>
+                                <span class="recent-games-status @(row.IsPaid ? "paid" : "unpaid")">
+                                    @(row.IsPaid ? "Paid" : "Unpaid")
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <button type="button" class="owes-see-all-btn" @onclick="GoToGames">View All Games</button>
+        </div>
     </div>
 </section>
 
@@ -130,6 +165,7 @@
     private decimal outstandingPayAmount;
     private int unpaidGames;
     private List<UnpaidGameGroupRow> unpaidGamesList = new();
+    private List<RecentGameRow> recentGames = new();
     private string? userId;
 
     private void ToggleSeasonMenu()
@@ -198,6 +234,7 @@
             outstandingPayAmount = 0;
             unpaidGames = 0;
             unpaidGamesList.Clear();
+            recentGames.Clear();
             return;
         }
 
@@ -221,7 +258,8 @@
 
         var unpaidQuery = query.Where(x => !x.IsPaid);
         outstandingPayAmount = await unpaidQuery.SumAsync(x => x.FeeAmount);
-        
+        unpaidGames = await unpaidQuery.CountAsync();
+
        var unpaidListToQuery = await unpaidQuery
             .OrderBy(x => x.GameDate)
             .ToListAsync();
@@ -243,6 +281,22 @@
             })
             .Take(3)
             .ToList();
+
+        var today = DateTime.Today;
+
+        recentGames = await query
+            .Where(x => x.GameDate < today)
+            .OrderByDescending(x => x.GameDate)
+            .ThenByDescending(x => x.Id)
+            .Select(x => new RecentGameRow
+            {
+                GameDate = x.GameDate,
+                LocationName = x.LocationName,
+                Earnings = x.FeeAmount,
+                IsPaid = x.IsPaid
+            })
+            .Take(5)
+            .ToListAsync();
     }
 
     private async Task MarkGameAsPaidAsync(List<int> gameIds)
@@ -281,5 +335,13 @@
         public string LocationName { get; set; } = string.Empty;
         public decimal TotalAmount { get; set; }
         public List<int> GameIds { get; set; } = new();
+    }
+
+    private sealed class RecentGameRow
+    {
+        public DateTime GameDate { get; set; }
+        public string LocationName { get; set; } = string.Empty;
+        public decimal Earnings { get; set; }
+        public bool IsPaid { get; set; }
     }
 }
