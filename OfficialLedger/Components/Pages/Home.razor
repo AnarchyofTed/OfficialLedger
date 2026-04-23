@@ -281,7 +281,10 @@
             .Take(3)
             .ToList();
 
+        var today = DateTime.Today;
+
         recentGames = await query
+            .Where(x => x.GameDate < today)
             .OrderByDescending(x => x.GameDate)
             .ThenByDescending(x => x.Id)
             .Select(x => new RecentGameRow
