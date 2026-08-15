@@ -17,42 +17,36 @@
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
-
-<div class="row">
-    <div class="col-md-4">
-        <StatusMessage Message="@Message" />
-        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
-            <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
-            <hr />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label for="email">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="password">Password</label>
-                <ValidationMessage For="() => Input.Password" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="confirm-password">Confirm Password</label>
-                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </EditForm>
+<section class="auth-card">
+    <div class="auth-card-heading">
+        <p class="page-kicker">@SelectedPlanLabel</p>
+        <h1>Create your ledger.</h1>
+        <p>Your first clean season record is only a minute away.</p>
     </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div>
-</div>
+    <StatusMessage Message="@Message" />
+    <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" asp-route-plan="@Plan" method="post" OnValidSubmit="RegisterUser" FormName="register" class="auth-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="validation-summary" role="alert" />
+        <div class="auth-field">
+            <label for="register-email">Email address</label>
+            <InputText id="register-email" @bind-Value="Input.Email" class="auth-input" autocomplete="username" aria-required="true" placeholder="you@example.com" />
+            <ValidationMessage For="() => Input.Email" class="field-validation" />
+        </div>
+        <div class="auth-field">
+            <label for="register-password">Password</label>
+            <InputText id="register-password" type="password" @bind-Value="Input.Password" class="auth-input" autocomplete="new-password" aria-required="true" placeholder="At least 6 characters" />
+            <ValidationMessage For="() => Input.Password" class="field-validation" />
+        </div>
+        <div class="auth-field">
+            <label for="register-confirm">Confirm password</label>
+            <InputText id="register-confirm" type="password" @bind-Value="Input.ConfirmPassword" class="auth-input" autocomplete="new-password" aria-required="true" placeholder="Repeat your password" />
+            <ValidationMessage For="() => Input.ConfirmPassword" class="field-validation" />
+        </div>
+        <button type="submit" class="ol-button ol-button-lime auth-submit">Create free account <span>↗</span></button>
+        <p class="auth-note">By continuing, you agree to keep the game moving.</p>
+        <p class="auth-switch">Already have an account? <a href="/Account/Login">Log in</a></p>
+    </EditForm>
+</section>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
@@ -62,6 +56,11 @@
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Plan { get; set; }
+
+    private string SelectedPlanLabel => string.IsNullOrWhiteSpace(Plan) ? "Start free" : $"{Plan} plan";
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
@@ -99,7 +98,7 @@
         }
 
         await SignInManager.SignInAsync(user, isPersistent: false);
-        RedirectManager.RedirectTo(ReturnUrl);
+        RedirectManager.RedirectTo(ReturnUrl ?? "/dashboard");
     }
 
     private ApplicationUser CreateUser()

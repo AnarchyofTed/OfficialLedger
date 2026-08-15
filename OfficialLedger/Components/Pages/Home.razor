@@ -1,4 +1,4 @@
-@page "/"
+@page "/dashboard"
 @attribute [Authorize]
 @rendermode InteractiveServer
 
@@ -22,51 +22,53 @@
 <section class="dashboard-page">
     <header class="page-header dashboard-header">
         <div>
+            <p class="page-kicker">Season command center</p>
             <h1 class="page-title">Welcome Back, @UserName</h1>
             <p class="page-subtitle">@selectedSeasonDateRange</p>
         </div>
 
-        <div class="season-picker">
-            <button type="button" class="season-btn" @onclick="ToggleSeasonMenu">@selectedSeasonName</button>
+        <div class="dashboard-header-actions">
+            <button type="button" class="primary-btn dashboard-add-game" @onclick="GoToAddGame">Add game <span>+</span></button>
+            <div class="season-picker">
+                <button type="button" class="season-btn" @onclick="ToggleSeasonMenu">@selectedSeasonName <span>⌄</span></button>
 
-            @if (isSeasonMenuOpen)
-            {
-                <div class="season-menu">
-                    @if (!seasons.Any())
-                    {
-                        <div class="season-option-empty">No seasons available.</div>
-                    }
-                    else
-                    {
-                        @foreach (var season in seasons)
+                @if (isSeasonMenuOpen)
+                {
+                    <div class="season-menu">
+                        @if (!seasons.Any())
                         {
-                            <button
-                                type="button"
-                                class="season-option"
-                                @onclick="() => SelectSeason(season)">
-                                @season.Name
-                            </button>
+                            <div class="season-option-empty">No seasons available.</div>
                         }
-                    }
-                </div>
-            }
+                        else
+                        {
+                            @foreach (var season in seasons)
+                            {
+                                <button type="button" class="season-option" @onclick="() => SelectSeason(season)">@season.Name</button>
+                            }
+                        }
+                    </div>
+                }
+            </div>
         </div>
     </header>
 </section>
 
 <section class="dashboard-metrics">
     <article class="metric-card">
+        <span class="metric-icon" aria-hidden="true">$</span>
         <p class="metric-label">Total Earnings</p>
         <p class="metric-value">@totalEarnings.ToString("C")</p>
         <p class="metric-subtext">@totalGames @(totalGames == 1 ? "game" : "games")</p>
     </article>
 
     <article class="metric-card">
+        <span class="metric-icon metric-icon-warn" aria-hidden="true">!</span>
         <p class="metric-label">Outstanding Pay</p>
         <p class="metric-value metric-value-outstanding">@outstandingPayAmount.ToString("C")</p>
         <p class="metric-subtext">@unpaidGames @(unpaidGames == 1 ? "game" : "games")</p>
     </article>
     <article class="metric-card">
+        <span class="metric-icon" aria-hidden="true">↗</span>
         <p class="metric-label">Miles Driven</p>
         <p class="metric-value metric-value-neutral">
             @totalMilesDriven.ToString("N0")
@@ -78,6 +80,7 @@
 
 <section class="attention-card">
     <div class="attention-card-header">
+        <p class="page-kicker">Stay on top of the season</p>
         <h2>What Needs Attention</h2>
         <p>Track unpaid games and review your most recent assignments.</p>
     </div>
@@ -327,6 +330,11 @@
     private void GoToGames()
     {
         NavigationManager.NavigateTo("/games");
+    }
+
+    private void GoToAddGame()
+    {
+        NavigationManager.NavigateTo("/add-game");
     }
 
     private sealed class UnpaidGameGroupRow

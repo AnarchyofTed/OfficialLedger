@@ -1,0 +1,229 @@
+@page "/"
+@layout OfficialLedger.Components.Layout.LandingLayout
+@rendermode InteractiveServer
+
+<PageTitle>OfficialLedger | Every game. Every dollar. One clear record.</PageTitle>
+
+<div class="landing-page" id="top">
+    <section class="landing-hero">
+        <div class="field-geometry" aria-hidden="true"></div>
+
+        <header class="landing-header landing-wrap">
+            <LedgerBrand Href="/" />
+            <nav class="landing-nav" aria-label="Main navigation">
+                <a href="#features">Features</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#associations">For associations</a>
+            </nav>
+            <div class="landing-header-actions">
+                <a class="landing-login" href="/Account/Login">Log in</a>
+                <a class="ol-button ol-button-lime ol-button-small" href="/Account/Register">Start free</a>
+            </div>
+        </header>
+
+        <div class="landing-hero-grid landing-wrap">
+            <div class="landing-hero-copy">
+                <div class="landing-eyebrow"><span></span>Built for sports officials</div>
+                <h1>Every game.<br />Every dollar.<br /><em>One clear record.</em></h1>
+                <p>Track assignments, mileage, expenses, and payouts without spreadsheets.</p>
+                <div class="landing-hero-actions">
+                    <a class="ol-button ol-button-lime" href="/Account/Register">Start tracking free <span>↗</span></a>
+                    <a class="ol-button ol-button-outline" href="#features">See how it works <span>↓</span></a>
+                </div>
+                <div class="landing-proof" aria-label="OfficialLedger benefits">
+                    <div><strong>All sports</strong><span>One season view</span></div>
+                    <div><strong>Tax-ready</strong><span>Mileage and expenses</span></div>
+                    <div><strong>No card</strong><span>Free to start</span></div>
+                </div>
+            </div>
+
+            <div class="landing-product-stage" aria-label="OfficialLedger dashboard preview">
+                <div class="preview-dashboard">
+                    <aside class="preview-rail" aria-hidden="true">
+                        <span class="preview-mini-mark">OL</span>
+                        <span class="active">▦</span>
+                        <span>□</span>
+                        <span>⌁</span>
+                        <span>$</span>
+                    </aside>
+                    <div class="preview-main">
+                        <div class="preview-topline">
+                            <div><small>Season dashboard</small><h2>2026 Season</h2></div>
+                            <span class="preview-season">Full season⌄</span>
+                        </div>
+                        <div class="preview-metrics">
+                            <div><strong>42</strong><span>Games</span></div>
+                            <div><strong>$4,860</strong><span>Earned</span></div>
+                            <div><strong>1,284</strong><span>Miles</span></div>
+                        </div>
+                        <div class="preview-chart">
+                            <div><span>Season earnings</span><strong>$4.8k</strong></div>
+                            <div class="preview-bars" aria-hidden="true">
+                                @foreach (var height in chartHeights)
+                                {
+                                    <i style="height: @(height)%"></i>
+                                }
+                            </div>
+                        </div>
+                        <div class="preview-games-heading"><h3>Upcoming games</h3><span>View all →</span></div>
+                        <div class="preview-games">
+                            @foreach (var game in previewGames)
+                            {
+                                <article>
+                                    <span class="preview-date"><b>@game.Month</b><strong>@game.Day</strong></span>
+                                    <span class="preview-game-copy"><strong>@game.Level @game.Sport</strong><small>@game.Location</small></span>
+                                    <span class="preview-status @(game.Pending ? "pending" : string.Empty)">@(game.Pending ? "Pending" : "Confirmed")</span>
+                                    <b class="preview-fee">@game.Fee</b>
+                                </article>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="landing-features" id="features">
+        <div class="landing-section-kicker landing-wrap"><span>Built around game day</span><b>01 / Overview</b></div>
+        <div class="landing-section-intro landing-wrap">
+            <div><p class="landing-lime-label">The season command center</p><h2>One season view.<br /><em>Zero scattered records.</em></h2></div>
+            <p>OfficialLedger connects the details before the game with the money and mileage after it, so your entire season makes sense at a glance.</p>
+        </div>
+
+        <div class="audience-switcher landing-wrap">
+            <div class="audience-tabs" role="tablist" aria-label="Choose a product view">
+                <button type="button" class="@(activeAudience == "official" ? "active" : string.Empty)" @onclick='() => activeAudience = "official"'>For officials</button>
+                <button type="button" class="@(activeAudience == "assigner" ? "active" : string.Empty)" @onclick='() => activeAudience = "assigner"'>For assigners</button>
+                <button type="button" class="@(activeAudience == "association" ? "active" : string.Empty)" @onclick='() => activeAudience = "association"'>For associations</button>
+            </div>
+            <div class="audience-panel">
+                <div class="audience-copy">
+                    <span>@Audience.Label</span>
+                    <h3>@Audience.Title</h3>
+                    <p>@Audience.Copy</p>
+                    <a href="/Account/Register">Explore OfficialLedger <span>↗</span></a>
+                </div>
+                <div class="audience-list">
+                    @for (var index = 0; index < Audience.Items.Length; index++)
+                    {
+                        var item = Audience.Items[index];
+                        <article>
+                            <b>@((index + 1).ToString("00"))</b>
+                            <div><h4>@item.Title</h4><p>@item.Copy</p></div>
+                        </article>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="landing-workflow landing-wrap" aria-label="How OfficialLedger works">
+            <div><span>Before</span><strong>Add the assignment</strong><p>Save the time, sport, location, fee, and notes.</p></div>
+            <i aria-hidden="true">→</i>
+            <div><span>Game day</span><strong>Track the trip</strong><p>Log mileage and expenses while they are fresh.</p></div>
+            <i aria-hidden="true">→</i>
+            <div><span>After</span><strong>Close the books</strong><p>Mark the payment received and keep the record.</p></div>
+        </div>
+
+        <div class="association-banner landing-wrap" id="associations">
+            <div class="association-orbit" aria-hidden="true"><span>15</span><small>officials</small></div>
+            <div><p class="landing-lime-label">For associations and assigning crews</p><h3>Give every official a better home base.</h3></div>
+            <p>Import schedules, share consistent game details, and see the season without taking away each official's private financial record.</p>
+            <a class="ol-button ol-button-outline" href="/Account/Register?plan=Crew">Preview Crew <span>↗</span></a>
+        </div>
+    </section>
+
+    <section class="landing-pricing" id="pricing">
+        <div class="landing-section-kicker landing-wrap"><span>Simple by design</span><b>02 / Pricing</b></div>
+        <div class="pricing-heading landing-wrap">
+            <div><p class="landing-lime-label">Founding pricing</p><h2>Start free.<br />Upgrade when it <em>earns its keep.</em></h2></div>
+            <div class="billing-toggle" aria-label="Billing frequency">
+                <button type="button" class="@(!annualBilling ? "active" : string.Empty)" @onclick="() => annualBilling = false">Monthly</button>
+                <button type="button" class="@(annualBilling ? "active" : string.Empty)" @onclick="() => annualBilling = true">Annual <span>Save 20%</span></button>
+            </div>
+        </div>
+        <div class="pricing-grid landing-wrap">
+            @foreach (var plan in plans)
+            {
+                var price = annualBilling ? plan.AnnualPrice : plan.MonthlyPrice;
+                <article class="pricing-card @(plan.Featured ? "featured" : string.Empty)">
+                    @if (plan.Featured)
+                    {
+                        <span class="pricing-popular">Most popular</span>
+                    }
+                    <div class="pricing-card-top">
+                        <div><h3>@plan.Name</h3><p>@plan.Description</p></div>
+                        <div class="pricing-price"><strong>$@price</strong><span>/ month</span></div>
+                    </div>
+                    <ul>
+                        @foreach (var feature in plan.Features)
+                        {
+                            <li><span>✓</span>@feature</li>
+                        }
+                    </ul>
+                    <a class="ol-button @(plan.Featured ? "ol-button-lime" : "ol-button-dark-outline")" href="/Account/Register?plan=@plan.Name">
+                        @(plan.Name == "Starter" ? "Start free" : $"Choose {plan.Name}") <span>↗</span>
+                    </a>
+                    @if (annualBilling && price > 0)
+                    {
+                        <small>Billed annually. Cancel anytime.</small>
+                    }
+                </article>
+            }
+        </div>
+
+        <div class="landing-final-cta landing-wrap">
+            <div><p class="landing-lime-label">Ready for the next assignment?</p><h2>Run your season<br />like it matters.</h2></div>
+            <div><p>Build a clean record from game one. No card required for the Starter plan.</p><a class="ol-button ol-button-lime" href="/Account/Register">Create your ledger <span>↗</span></a></div>
+        </div>
+    </section>
+
+    <footer class="landing-footer landing-wrap">
+        <LedgerBrand Href="/" Compact="true" />
+        <p>Built for the officials who keep the game moving.</p>
+        <div><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="/Account/Login">Log in</a></div>
+    </footer>
+</div>
+
+@code {
+    private bool annualBilling = true;
+    private string activeAudience = "official";
+    private readonly int[] chartHeights = [34, 48, 40, 58, 45, 62, 70, 54, 67, 76, 64, 82];
+
+    private readonly PreviewGame[] previewGames =
+    [
+        new("MAY", "24", "Varsity", "Baseball", "Lincoln High Field", "$120", false),
+        new("MAY", "26", "JV", "Basketball", "Riverside Gym", "$105", false),
+        new("MAY", "30", "Youth", "Soccer", "Oak Park Complex", "$95", true)
+    ];
+
+    private readonly Plan[] plans =
+    [
+        new("Starter", "For a first season without the spreadsheet.", 0, 0, false, ["Unlimited game entries", "Mileage and expense log", "Season totals", "CSV export"]),
+        new("Pro", "For active multi-sport officials.", 9, 7, true, ["Everything in Starter", "Payment reminders", "Tax-ready reports", "Calendar sync", "Priority support"]),
+        new("Crew", "For small associations and assigning crews.", 24, 19, false, ["Everything in Pro", "Up to 15 members", "Shared game imports", "Association dashboard", "Custom branding"])
+    ];
+
+    private AudienceContent Audience => activeAudience switch
+    {
+        "assigner" => new(
+            "For assigners",
+            "Less chasing. A clearer crew.",
+            "Give officials one dependable view of their schedule and reduce the back-and-forth around game details.",
+            [new("Clean assignments", "Share the details officials actually need before they head to the field."), new("Status visibility", "See which games are accepted, pending, updated, or completed."), new("Crew notes", "Keep partners, contacts, parking details, and site notes attached to the game.")]),
+        "association" => new(
+            "For associations",
+            "A modern home for your officials.",
+            "Bring scheduling context, season records, and communication into one branded experience.",
+            [new("Member workspace", "A shared home that still gives every official a private ledger."), new("Season reporting", "Understand game coverage and payment trends without manual rollups."), new("Flexible imports", "Start with simple spreadsheet imports while integrations are connected.")]),
+        _ => new(
+            "For officials",
+            "Your whole season, finally in one place.",
+            "Know where you are going, what you earned, what you drove, and what still needs to be paid.",
+            [new("Assignment ledger", "Games, partners, sites, fees, and status—organized by season."), new("Automatic mileage", "Start with a route, adjust the distance, and keep a clean tax-ready log."), new("Payment tracking", "See expected, received, and overdue game fees without chasing spreadsheets.")])
+    };
+
+    private sealed record PreviewGame(string Month, string Day, string Level, string Sport, string Location, string Fee, bool Pending);
+    private sealed record AudienceItem(string Title, string Copy);
+    private sealed record AudienceContent(string Label, string Title, string Copy, AudienceItem[] Items);
+    private sealed record Plan(string Name, string Description, int MonthlyPrice, int AnnualPrice, bool Featured, string[] Features);
+}

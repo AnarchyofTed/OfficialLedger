@@ -20,12 +20,14 @@
     <div class="add-game-page">
     <div class="page-header">
         <div>
+            <p class="page-kicker">New assignment</p>
             <h1 class="page-title">Add Game</h1>
-            <p class="page-subtitle">Log your officiating assignment below.</p>
+            <p class="page-subtitle">Capture the details now. Your season totals will update automatically.</p>
         </div>
     </div>
 
     <div class="form-card">
+        <div class="form-card-heading"><span>01</span><div><h2>Assignment details</h2><p>Required fields are marked by the form.</p></div></div>
         <EditForm Model="Input" OnValidSubmit="HandleValidSubmit" FormName="addGameForm">
             <DataAnnotationsValidator />
 

@@ -12,57 +12,32 @@
 
 <PageTitle>Log in</PageTitle>
 
-<h1>Log in</h1>
-<div class="row">
-    <div class="col-md-4">
-        <section>
-            <StatusMessage Message="@errorMessage" />
-            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
-                <DataAnnotationsValidator />
-                <h2>Use a local account to log in.</h2>
-                <hr />
-                <ValidationSummary class="text-danger" role="alert" />
-                <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                    <label for="email" class="form-label">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
-                </div>
-                <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label for="password" class="form-label">Password</label>
-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
-                </div>
-                <div class="checkbox mb-3">
-                    <label class="form-label">
-                        <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
-                        Remember me
-                    </label>
-                </div>
-                <div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-                </div>
-                <div>
-                    <p>
-                        <a href="Account/ForgotPassword">Forgot your password?</a>
-                    </p>
-                    <p>
-                        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a>
-                    </p>
-                    <p>
-                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
-                    </p>
-                </div>
-            </EditForm>
-        </section>
+<section class="auth-card">
+    <div class="auth-card-heading">
+        <p class="page-kicker">Welcome back</p>
+        <h1>Log in to your ledger.</h1>
+        <p>Pick up where your season left off.</p>
     </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div>
-</div>
+    <StatusMessage Message="@errorMessage" />
+    <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login" class="auth-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="validation-summary" role="alert" />
+        <div class="auth-field">
+            <label for="login-email">Email address</label>
+            <InputText id="login-email" @bind-Value="Input.Email" class="auth-input" autocomplete="username" aria-required="true" placeholder="you@example.com" />
+            <ValidationMessage For="() => Input.Email" class="field-validation" />
+        </div>
+        <div class="auth-field">
+            <div class="auth-label-row"><label for="login-password">Password</label><a href="Account/ForgotPassword">Forgot password?</a></div>
+            <InputText id="login-password" type="password" @bind-Value="Input.Password" class="auth-input" autocomplete="current-password" aria-required="true" placeholder="Your password" />
+            <ValidationMessage For="() => Input.Password" class="field-validation" />
+        </div>
+        <label class="auth-checkbox"><InputCheckbox @bind-Value="Input.RememberMe" /> <span>Keep me logged in</span></label>
+        <button type="submit" class="ol-button ol-button-lime auth-submit">Log in <span>↗</span></button>
+        <p class="auth-switch">New to OfficialLedger? <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Create a free account</a></p>
+        <a class="auth-secondary-link" href="Account/ResendEmailConfirmation">Resend email confirmation</a>
+    </EditForm>
+</section>
 
 @code {
     private string? errorMessage;
@@ -93,7 +68,7 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl);
+            RedirectManager.RedirectTo(ReturnUrl ?? "/dashboard");
         }
         else if (result.RequiresTwoFactor)
         {
