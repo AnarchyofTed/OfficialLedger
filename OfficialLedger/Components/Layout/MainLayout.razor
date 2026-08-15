@@ -1,63 +1,64 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 
-<div class="app-shell">
-    <aside class="sidebar">
-        <div class="sidebar-dark-panel"></div>
+<AuthorizeView>
+    <Authorized>
+        <div class="app-shell">
+            <aside class="sidebar">
+                <div class="sidebar-content">
+                    <div class="sidebar-top">
+                        <LedgerBrand Href="/dashboard" Compact="true" />
+                        <span class="sidebar-season-label">Official workspace</span>
+                    </div>
 
-        <div class="sidebar-content">
-            <div class="sidebar-top">
-                <a href="/" class="sidebar-brand">
-                    <span class="brand-icon">OL</span>
-                    <span class="brand-text">Official Ledger</span>
-                </a>
+                    <nav class="sidebar-nav" aria-label="Application navigation">
+                        <NavLink href="/dashboard" Match="NavLinkMatch.All" class="sidebar-link">
+                            <span class="sidebar-link-icon">▦</span><span>Dashboard</span>
+                        </NavLink>
+                        <NavLink href="/games" class="sidebar-link">
+                            <span class="sidebar-link-icon">□</span><span>My Games</span>
+                        </NavLink>
+                        <NavLink href="/add-game" class="sidebar-link sidebar-quick-add">
+                            <span class="sidebar-link-icon">＋</span><span>Add Game</span>
+                        </NavLink>
+                        <NavLink href="/reports" class="sidebar-link">
+                            <span class="sidebar-link-icon">▥</span><span>Reports</span>
+                        </NavLink>
+                    </nav>
 
-            </div>
-                <nav class="sidebar-nav">
-                    <NavLink href="/" Match="NavLinkMatch.All" class="sidebar-link">
-                        <span class="sidebar-link-icon">⌂</span>
-                        <span>Dashboard</span>
-                    </NavLink>
-
-                    <NavLink href="/games" class="sidebar-link">
-                        <span class="sidebar-link-icon">≡</span>
-                        <span>My Games</span>
-                    </NavLink>
-
-                    <NavLink href="/reports" class="sidebar-link">
-                        <span class="sidebar-link-icon">▣</span>
-                        <span>Reports</span>
-                    </NavLink>
-                </nav>
-            <div class="sidebar-bottom">
-                <AuthorizeView>
-                    <Authorized>
+                    <div class="sidebar-bottom">
                         <div class="sidebar-user">
-                            <div class="sidebar-user-avatar">👤</div>
-
+                            <a href="/Account/Manage" class="sidebar-user-avatar" aria-label="Manage account">@GetInitial(context.User.Identity?.Name)</a>
                             <div class="sidebar-user-info">
-                                <a href="/Account/Manage" class="sidebar-user-name">
-                                    @context.User.Identity?.Name
-                                </a>
-
+                                <a href="/Account/Manage" class="sidebar-user-name">@context.User.Identity?.Name</a>
                                 <form method="post" action="/Account/Logout" @formname="logoutForm">
                                     <AntiforgeryToken />
-                                    <input type="hidden" name="returnUrl" value="" />
+                                    <input type="hidden" name="returnUrl" value="/" />
                                     <button type="submit" class="sidebar-logout-btn">Log out</button>
                                 </form>
                             </div>
                         </div>
-                    </Authorized>
+                    </div>
+                </div>
+            </aside>
 
-                    <NotAuthorized>
-                        <a href="/Account/Login" class="sidebar-login-link">Login</a>
-                    </NotAuthorized>
-                </AuthorizeView>
-            </div>
+            <main class="main-area">@Body</main>
         </div>
-    </aside>
+    </Authorized>
+    <NotAuthorized>
+        <div class="public-account-shell">
+            <header class="public-account-header">
+                <LedgerBrand Href="/" Compact="true" />
+                <nav><a href="/">Back to home</a><a class="ol-button ol-button-lime ol-button-small" href="/Account/Register">Start free</a></nav>
+            </header>
+            <main class="public-account-main">@Body</main>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
 
-    <main class="main-area">
-        @Body
-    </main>
-</div>
+@code {
+    private static string GetInitial(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "O" : value.Trim()[0].ToString().ToUpperInvariant();
+    }
+}

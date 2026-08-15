@@ -1,6 +1,138 @@
-﻿@page "/reports"
+@page "/reports"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using OfficialLedger.Data
+@using OfficialLedger.Models
+
+@inject ApplicationDbContext Db
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Reports</PageTitle>
 
-<h1>Reports</h1>
-<p>This is the Reports page.</p>
+<div class="page-content reports-page">
+    <header class="page-header">
+        <div>
+            <p class="page-kicker">Season totals</p>
+            <h1 class="page-title">Reports</h1>
+            <p class="page-subtitle">A clean summary of the work, travel, and payments in your ledger.</p>
+        </div>
+        <span class="report-period">All recorded games</span>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="loading-card">Building your season report...</div>
+    }
+    else if (totalGames == 0)
+    {
+        <div class="empty-state">
+            <span class="empty-state-mark" aria-hidden="true">▥</span>
+            <h2>No report data yet.</h2>
+            <p>Your earnings and mileage summaries will appear after you add a game.</p>
+            <a class="add-game-btn" href="/add-game">Add your first game</a>
+        </div>
+    }
+    else
+    {
+        <section class="report-metrics">
+            <article><span>Total earnings</span><strong>@totalEarnings.ToString("C0")</strong><small>Across @totalGames games</small></article>
+            <article><span>Paid</span><strong>@paidEarnings.ToString("C0")</strong><small>@paidGames completed payments</small></article>
+            <article class="report-outstanding"><span>Outstanding</span><strong>@outstandingEarnings.ToString("C0")</strong><small>@unpaidGames awaiting payment</small></article>
+            <article><span>Miles logged</span><strong>@totalMiles.ToString("N0")</strong><small>Season travel record</small></article>
+        </section>
+
+        <section class="report-grid">
+            <article class="report-card report-payment-card">
+                <div class="report-card-header"><div><p class="page-kicker">Payment health</p><h2>@paidRate.ToString("N0")% collected</h2></div><span>@paidGames / @totalGames</span></div>
+                <div class="payment-progress" aria-label="@PaidProgressLabel"><i style="width: @(paidRate)%"></i></div>
+                <div class="payment-legend"><span><i class="paid"></i>Paid <b>@paidEarnings.ToString("C0")</b></span><span><i class="unpaid"></i>Outstanding <b>@outstandingEarnings.ToString("C0")</b></span></div>
+            </article>
+
+            <article class="report-card">
+                <div class="report-card-header"><div><p class="page-kicker">Game mix</p><h2>By sport</h2></div><span>@sportSummaries.Count sports</span></div>
+                <div class="sport-breakdown">
+                    @foreach (var sport in sportSummaries)
+                    {
+                        <div>
+                            <span class="sport-breakdown-name"><strong>@sport.Name</strong><small>@sport.GameCount games · @sport.Earnings.ToString("C0")</small></span>
+                            <span class="sport-breakdown-bar"><i style="width: @(sport.Percentage)%"></i></span>
+                        </div>
+                    }
+                </div>
+            </article>
+        </section>
+
+        <section class="report-note">
+            <span aria-hidden="true">i</span>
+            <div><strong>Keep the books. Stay ready.</strong><p>OfficialLedger keeps your game and mileage records organized, but it does not provide tax advice. Confirm deductions and reporting requirements with a qualified tax professional.</p></div>
+        </section>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private int totalGames;
+    private int paidGames;
+    private int unpaidGames;
+    private decimal totalEarnings;
+    private decimal paidEarnings;
+    private decimal outstandingEarnings;
+    private decimal totalMiles;
+    private int paidRate;
+    private List<SportSummary> sportSummaries = [];
+    private string PaidProgressLabel => $"{paidRate:N0} percent of games paid";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user is null)
+        {
+            isLoading = false;
+            return;
+        }
+
+        var games = await Db.Games
+            .Include(x => x.SportType)
+            .Where(x => x.UserId == user.Id)
+            .ToListAsync();
+
+        totalGames = games.Count;
+        paidGames = games.Count(x => x.IsPaid);
+        unpaidGames = totalGames - paidGames;
+        totalEarnings = games.Sum(x => x.FeeAmount);
+        paidEarnings = games.Where(x => x.IsPaid).Sum(x => x.FeeAmount);
+        outstandingEarnings = games.Where(x => !x.IsPaid).Sum(x => x.FeeAmount);
+        totalMiles = games.Sum(x => x.MilesDriven);
+        paidRate = totalGames == 0 ? 0 : (int)Math.Round((decimal)paidGames / totalGames * 100);
+
+        sportSummaries = games
+            .GroupBy(x => x.SportType?.Name ?? "Other")
+            .Select(group => new SportSummary
+            {
+                Name = group.Key,
+                GameCount = group.Count(),
+                Earnings = group.Sum(x => x.FeeAmount),
+                Percentage = (int)Math.Round((decimal)group.Count() / totalGames * 100)
+            })
+            .OrderByDescending(x => x.GameCount)
+            .ToList();
+
+        isLoading = false;
+    }
+
+    private sealed class SportSummary
+    {
+        public string Name { get; set; } = string.Empty;
+        public int GameCount { get; set; }
+        public decimal Earnings { get; set; }
+        public int Percentage { get; set; }
+    }
+}

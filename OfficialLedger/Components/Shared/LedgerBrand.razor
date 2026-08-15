@@ -1,0 +1,15 @@
+<a href="@Href" class="ledger-brand @(Compact ? "ledger-brand-compact" : string.Empty)" aria-label="OfficialLedger home">
+    <span class="ledger-brand-mark" aria-hidden="true">
+        <span class="ledger-brand-ring"></span>
+        <span class="ledger-brand-lines"></span>
+    </span>
+    <span class="ledger-brand-name">Official<span>Ledger</span></span>
+</a>
+
+@code {
+    [Parameter]
+    public string Href { get; set; } = "/";
+
+    [Parameter]
+    public bool Compact { get; set; }
+}

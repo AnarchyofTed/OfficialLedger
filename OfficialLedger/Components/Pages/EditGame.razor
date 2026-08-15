@@ -21,6 +21,7 @@
     <div class="add-game-page">
     <div class="page-header">
         <div>
+            <p class="page-kicker">Assignment record</p>
             <h1 class="page-title">Game Details</h1>
             <p class="page-subtitle">
                 @(isEditMode ? "Edit your saved game details." : "View your saved game details.")
@@ -39,6 +40,7 @@
     else
     {
         <div class="form-card">
+            <div class="form-card-heading"><span>@Input.GameDate.ToString("dd")</span><div><h2>@Input.LocationName</h2><p>@Input.GameDate.ToString("MMMM d, yyyy")</p></div></div>
             <EditForm Model="Input" OnValidSubmit="HandleValidSubmit" FormName="editGameForm">
                 <DataAnnotationsValidator />
 
