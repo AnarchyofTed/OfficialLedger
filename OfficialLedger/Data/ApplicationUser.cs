@@ -10,6 +10,11 @@ namespace OfficialLedger.Data
         public string? LastName { get; set; }
         public decimal MileageRate { get; set; } = 0.67m;
 
+        public ApplicationUser()
+        {
+            ApplicationUserID = Guid.NewGuid();
+        }
+
         public ApplicationUser(string? firstName, string? lastName, decimal mileageRate)
         {
             ApplicationUserID = Guid.NewGuid();
