@@ -1,0 +1,3 @@
+.report-filter { max-width: 100%; min-width: 210px; min-height: 44px; cursor: pointer; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 700; }
+.report-filter:disabled { cursor: wait; }
+@media (max-width: 680px) { .report-filter { width: 100%; } }
