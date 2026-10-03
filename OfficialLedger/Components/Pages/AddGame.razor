@@ -47,7 +47,7 @@
 
             <div class="form-grid">
                     <div class="form-field">
-                        <label for="season">Season</label>
+                        <label for="season">Season *</label>
                         <InputSelect id="season" @bind-Value="Input.SeasonId" class="form-input">
                             <option value="">Select season</option>
                             @foreach (var season in seasons)
@@ -59,8 +59,9 @@
                         <a href="/add-season?returnTo=add-game">+ Add Season</a>
                     </div>
                 <div class="form-field">
-                    <label for="gameDate">Game Date</label>
+                    <label for="gameDate">Game Date *</label>
                     <InputDate id="gameDate" @bind-Value="Input.GameDate" class="form-input" />
+                        <ValidationMessage For="() => Input.GameDate" />
                 </div>
 
                 <div class="form-field">
@@ -75,18 +76,18 @@
                 </div>
 
                 <div class="form-field">
-                    <label for="locationName">Location</label>
+                    <label for="locationName">Location (optional)</label>
                     <InputText id="locationName" @bind-Value="Input.LocationName" class="form-input" />
                 </div>
 
                 <div class="form-field">
-                    <label for="feeAmount">Fee Amount</label>
-                    <InputNumber id="feeAmount" @bind-Value="Input.FeeAmount" class="form-input" />
+                    <label for="feeAmount">Fee Amount (optional)</label>
+                    <InputNumber id="feeAmount" placeholder="0" @bind-Value="Input.FeeAmount" class="form-input" />
                 </div>
 
                 <div class="form-field">
-                    <label for="milesDriven">Miles Driven</label>
-                    <InputNumber id="milesDriven" @bind-Value="Input.MilesDriven" class="form-input" />
+                    <label for="milesDriven">Miles Driven (optional)</label>
+                    <InputNumber id="milesDriven" placeholder="0" @bind-Value="Input.MilesDriven" class="form-input" />
                 </div>
 
                 <div class="form-field checkbox-field">
@@ -165,11 +166,11 @@
         {
             UserId = user.Id,
             SeasonId = Input.SeasonId,
-            GameDate = Input.GameDate,
+            GameDate = Input.GameDate!.Value,
             SportTypeId = Input.SportTypeId!.Value,
-            LocationName = Input.LocationName,
-            FeeAmount = Input.FeeAmount,
-            MilesDriven = Input.MilesDriven,
+            LocationName = Input.LocationName ?? string.Empty,
+            FeeAmount = Input.FeeAmount ?? 0m,
+            MilesDriven = Input.MilesDriven ?? 0m,
             IsPaid = Input.IsPaid,
             Notes = Input.Notes
         };
@@ -202,17 +203,16 @@
         [Required(ErrorMessage = "Sport is required.")]
         public int? SportTypeId { get; set; }
 
-        [Required(ErrorMessage = "Location is required.")]
         public string LocationName { get; set; } = string.Empty;
 
-        [Required]
-        public DateTime GameDate { get; set; }
+        [Required(ErrorMessage = "Game date is required.")]
+        public DateTime? GameDate { get; set; }
 
         [Range(0, 10000, ErrorMessage = "Fee amount must be 0 or greater.")]
-        public decimal FeeAmount { get; set; }
+        public decimal? FeeAmount { get; set; } = 0m;
 
         [Range(0, 1000, ErrorMessage = "Miles driven must be 0 or greater.")]
-        public decimal MilesDriven { get; set; }
+        public decimal? MilesDriven { get; set; } = 0m;
 
         public bool IsPaid { get; set; }
 

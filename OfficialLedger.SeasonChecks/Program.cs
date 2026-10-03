@@ -30,10 +30,32 @@ season.SportImage = "../../file";
 Check(!Valid(season), "Unknown image accepted.");
 Check(SeasonImages.Path("../../file") == "/images/sports/other.svg", "Image fallback is unsafe.");
 
-var game = new AddGame.AddGameInputModel { SportTypeId = 1, LocationName = "Field" };
+var game = new AddGame.AddGameInputModel { SportTypeId = 1, GameDate = DateTime.Today };
 Check(!Valid(game), "Game with no season accepted.");
 game.SeasonId = 1;
-Check(Valid(game), "Game with a season rejected.");
+Check(Valid(game), "Game with a season and date rejected.");
+game.GameDate = null;
+Check(!Valid(game), "Game with no date accepted.");
+game.GameDate = DateTime.Today;
+game.FeeAmount = null;
+game.MilesDriven = null;
+Check(Valid(game), "Blank location, amount, or miles rejected.");
+game.FeeAmount = -1m;
+Check(!Valid(game), "Negative amount accepted.");
+game.FeeAmount = null;
+game.MilesDriven = -1m;
+Check(!Valid(game), "Negative miles accepted.");
+
+var editedGame = new EditGame.EditGameInputModel { SeasonId = 1, SportTypeId = 1, GameDate = DateTime.Today };
+Check(Valid(editedGame), "Edit requires an optional location.");
+editedGame.GameDate = null;
+Check(!Valid(editedGame), "Edit with no date accepted.");
+editedGame.GameDate = DateTime.Today;
+editedGame.FeeAmount = null;
+editedGame.MilesDriven = null;
+Check(Valid(editedGame), "Edit rejects cleared amount or miles.");
+editedGame.SeasonId = null;
+Check(!Valid(editedGame), "Edit with no season accepted.");
 
 using var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
     .UseSqlServer("Server=localhost;Database=SeasonChecks;Integrated Security=true;TrustServerCertificate=true").Options);

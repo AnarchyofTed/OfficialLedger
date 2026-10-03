@@ -40,7 +40,7 @@
     else
     {
         <div class="form-card">
-            <div class="form-card-heading"><span>@Input.GameDate.ToString("dd")</span><div><h2>@Input.LocationName</h2><p>@Input.GameDate.ToString("MMMM d, yyyy")</p></div></div>
+            <div class="form-card-heading"><span>@(Input.GameDate?.ToString("dd"))</span><div><h2>@Input.LocationName</h2><p>@(Input.GameDate?.ToString("MMMM d, yyyy"))</p></div></div>
             <EditForm Model="Input" OnValidSubmit="HandleValidSubmit" FormName="editGameForm">
                 <DataAnnotationsValidator />
                 @if (seasonError is not null)
@@ -55,7 +55,7 @@
 
                 <div class="form-grid">
                     <div class="form-field">
-                        <label for="season">Season</label>
+                        <label for="season">Season *</label>
                         <InputSelect id="season" @bind-Value="Input.SeasonId" class="form-input" disabled="@(!isEditMode)">
                             <option value="">Select season</option>
                             @foreach (var season in seasons)
@@ -66,11 +66,12 @@
                         <ValidationMessage For="() => Input.SeasonId" />
                     </div>
                     <div class="form-field">
-                        <label for="gameDate">Game Date</label>
+                        <label for="gameDate">Game Date *</label>
                         <InputDate id="gameDate"
                                    @bind-Value="Input.GameDate"
                                    class="form-input"
                                    disabled="@(!isEditMode)" />
+                        <ValidationMessage For="() => Input.GameDate" />
                     </div>
 
                     <div class="form-field">
@@ -88,7 +89,7 @@
                     </div>
 
                     <div class="form-field">
-                        <label for="locationName">Location</label>
+                        <label for="locationName">Location (optional)</label>
                         <InputText id="locationName"
                                    @bind-Value="Input.LocationName"
                                    class="form-input"
@@ -96,16 +97,16 @@
                     </div>
 
                     <div class="form-field">
-                        <label for="feeAmount">Fee Amount</label>
-                        <InputNumber id="feeAmount"
+                        <label for="feeAmount">Fee Amount (optional)</label>
+                        <InputNumber id="feeAmount" placeholder="0"
                                      @bind-Value="Input.FeeAmount"
                                      class="form-input"
                                      disabled="@(!isEditMode)" />
                     </div>
 
                     <div class="form-field">
-                        <label for="milesDriven">Miles Driven</label>
-                        <InputNumber id="milesDriven"
+                        <label for="milesDriven">Miles Driven (optional)</label>
+                        <InputNumber id="milesDriven" placeholder="0"
                                      @bind-Value="Input.MilesDriven"
                                      class="form-input"
                                      disabled="@(!isEditMode)" />
@@ -243,11 +244,11 @@
             return;
         }
         dbGame.SeasonId = Input.SeasonId;
-        dbGame.GameDate = Input.GameDate;
+        dbGame.GameDate = Input.GameDate!.Value;
         dbGame.SportTypeId = Input.SportTypeId!.Value;
-        dbGame.LocationName = Input.LocationName;
-        dbGame.FeeAmount = Input.FeeAmount;
-        dbGame.MilesDriven = Input.MilesDriven;
+        dbGame.LocationName = Input.LocationName ?? string.Empty;
+        dbGame.FeeAmount = Input.FeeAmount ?? 0m;
+        dbGame.MilesDriven = Input.MilesDriven ?? 0m;
         dbGame.IsPaid = Input.IsPaid;
         dbGame.Notes = Input.Notes;
 
@@ -315,17 +316,16 @@
         [Required(ErrorMessage = "Sport is required.")]
         public int? SportTypeId { get; set; }
 
-        [Required(ErrorMessage = "Location is required.")]
         public string LocationName { get; set; } = string.Empty;
 
-        [Required]
-        public DateTime GameDate { get; set; }
+        [Required(ErrorMessage = "Game date is required.")]
+        public DateTime? GameDate { get; set; }
 
         [Range(0, 10000, ErrorMessage = "Fee amount must be 0 or greater.")]
-        public decimal FeeAmount { get; set; }
+        public decimal? FeeAmount { get; set; } = 0m;
 
         [Range(0, 1000, ErrorMessage = "Miles driven must be 0 or greater.")]
-        public decimal MilesDriven { get; set; }
+        public decimal? MilesDriven { get; set; } = 0m;
 
         public bool IsPaid { get; set; }
 
