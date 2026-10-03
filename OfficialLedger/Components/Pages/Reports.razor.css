@@ -1,3 +1,14 @@
 .report-filter { max-width: 100%; min-width: 210px; min-height: 44px; cursor: pointer; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 700; }
 .report-filter:disabled { cursor: wait; }
 @media (max-width: 680px) { .report-filter { width: 100%; } }
+
+.report-expenses-card { margin-top: 18px; min-height: 0; }
+.report-expense-summary { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: baseline; margin: 24px 0; }
+.report-expense-total { font-family: var(--ol-body); font-size: clamp(26px,3vw,36px); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.3; overflow-wrap: anywhere; }
+.report-expense-summary span, .report-expense-note { color: var(--ol-muted); font-size: 12px; }
+.report-expense-table { width: 100%; border-collapse: collapse; }
+.report-expense-table th, .report-expense-table td { padding: 12px 8px; border-bottom: 1px solid var(--ol-line-dark); text-align: left; font-size: 13px; }
+.report-expense-table th { color: var(--ol-muted); font-size: 11px; text-transform: uppercase; }
+.report-expense-table th:last-child, .report-expense-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.report-expense-note { margin: 18px 0 0; line-height: 1.5; }
+@media (max-width: 680px) { .report-expenses-card .report-card-header { flex-wrap: wrap; } }
