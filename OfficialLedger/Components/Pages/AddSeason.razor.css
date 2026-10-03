@@ -1,8 +1,8 @@
 .season-image-fieldset { border: 0; margin: 0; padding: 0; }
 .season-image-fieldset legend { margin-bottom: 12px; font-weight: 700; }
 .season-image-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 12px; }
-.season-image-choice { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px; border: 2px solid #ded9ce; border-radius: 14px; cursor: pointer; }
-.season-image-choice.selected { border-color: #758c00; background: #f3f8dc; }
-.season-image-choice:focus-within { outline: 2px solid #142e30; outline-offset: 3px; }
+.season-image-choice { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px; border: 2px solid #d6e1f1; border-radius: 14px; cursor: pointer; }
+.season-image-choice.selected { border-color: #1d4ed8; background: #eaf2ff; }
+.season-image-choice:focus-within { outline: 2px solid #142e54; outline-offset: 3px; }
 .season-image-choice img { width: 48px; height: 48px; }
-.season-image-choice input { accent-color: #758c00; }
+.season-image-choice input { accent-color: #1d4ed8; }

@@ -33,8 +33,8 @@
             <ValidationMessage For="() => Input.Password" class="field-validation" />
         </div>
         <label class="auth-checkbox"><InputCheckbox @bind-Value="Input.RememberMe" /> <span>Keep me logged in</span></label>
-        <button type="submit" class="ol-button ol-button-lime auth-submit">Log in <span>↗</span></button>
-        <p class="auth-switch">New to OfficialLedger? <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Create a free account</a></p>
+        <button type="submit" class="ol-button ol-button-blue auth-submit">Log in <span>↗</span></button>
+        <p class="auth-switch">New to Blue Ledger? <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Create a free account</a></p>
         <a class="auth-secondary-link" href="Account/ResendEmailConfirmation">Resend email confirmation</a>
     </EditForm>
 </section>

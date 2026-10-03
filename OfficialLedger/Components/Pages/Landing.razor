@@ -2,7 +2,7 @@
 @layout OfficialLedger.Components.Layout.LandingLayout
 @rendermode InteractiveServer
 
-<PageTitle>OfficialLedger | Every game. Every dollar. One clear record.</PageTitle>
+<PageTitle>Blue Ledger | Every game. Every dollar. One clear record.</PageTitle>
 
 <div class="landing-page" id="top">
     <section class="landing-hero">
@@ -17,7 +17,7 @@
             </nav>
             <div class="landing-header-actions">
                 <a class="landing-login" href="/Account/Login">Log in</a>
-                <a class="ol-button ol-button-lime ol-button-small" href="/Account/Register">Start free</a>
+                <a class="ol-button ol-button-blue ol-button-small" href="/Account/Register">Start free</a>
             </div>
         </header>
 
@@ -27,20 +27,20 @@
                 <h1>Every game.<br />Every dollar.<br /><em>One clear record.</em></h1>
                 <p>Track assignments, mileage, expenses, and payouts without spreadsheets.</p>
                 <div class="landing-hero-actions">
-                    <a class="ol-button ol-button-lime" href="/Account/Register">Start tracking free <span>↗</span></a>
+                    <a class="ol-button ol-button-blue" href="/Account/Register">Start tracking free <span>↗</span></a>
                     <a class="ol-button ol-button-outline" href="#features">See how it works <span>↓</span></a>
                 </div>
-                <div class="landing-proof" aria-label="OfficialLedger benefits">
+                <div class="landing-proof" aria-label="Blue Ledger benefits">
                     <div><strong>All sports</strong><span>One season view</span></div>
                     <div><strong>Tax-ready</strong><span>Mileage and expenses</span></div>
                     <div><strong>No card</strong><span>Free to start</span></div>
                 </div>
             </div>
 
-            <div class="landing-product-stage" aria-label="OfficialLedger dashboard preview">
+            <div class="landing-product-stage" aria-label="Blue Ledger dashboard preview">
                 <div class="preview-dashboard">
                     <aside class="preview-rail" aria-hidden="true">
-                        <span class="preview-mini-mark">OL</span>
+                        <span class="preview-mini-mark">BL</span>
                         <span class="active">▦</span>
                         <span>□</span>
                         <span>⌁</span>
@@ -86,8 +86,8 @@
     <section class="landing-features" id="features">
         <div class="landing-section-kicker landing-wrap"><span>Built around game day</span><b>01 / Overview</b></div>
         <div class="landing-section-intro landing-wrap">
-            <div><p class="landing-lime-label">The season command center</p><h2>One season view.<br /><em>Zero scattered records.</em></h2></div>
-            <p>OfficialLedger connects the details before the game with the money and mileage after it, so your entire season makes sense at a glance.</p>
+            <div><p class="landing-blue-label">The season command center</p><h2>One season view.<br /><em>Zero scattered records.</em></h2></div>
+            <p>Blue Ledger connects the details before the game with the money and mileage after it, so your entire season makes sense at a glance.</p>
         </div>
 
         <div class="audience-switcher landing-wrap">
@@ -101,7 +101,7 @@
                     <span>@Audience.Label</span>
                     <h3>@Audience.Title</h3>
                     <p>@Audience.Copy</p>
-                    <a href="/Account/Register">Explore OfficialLedger <span>↗</span></a>
+                    <a href="/Account/Register">Explore Blue Ledger <span>↗</span></a>
                 </div>
                 <div class="audience-list">
                     @for (var index = 0; index < Audience.Items.Length; index++)
@@ -116,7 +116,7 @@
             </div>
         </div>
 
-        <div class="landing-workflow landing-wrap" aria-label="How OfficialLedger works">
+        <div class="landing-workflow landing-wrap" aria-label="How Blue Ledger works">
             <div><span>Before</span><strong>Add the assignment</strong><p>Save the time, sport, location, fee, and notes.</p></div>
             <i aria-hidden="true">→</i>
             <div><span>Game day</span><strong>Track the trip</strong><p>Log mileage and expenses while they are fresh.</p></div>
@@ -126,7 +126,7 @@
 
         <div class="association-banner landing-wrap" id="associations">
             <div class="association-orbit" aria-hidden="true"><span>15</span><small>officials</small></div>
-            <div><p class="landing-lime-label">For associations and assigning crews</p><h3>Give every official a better home base.</h3></div>
+            <div><p class="landing-blue-label">For associations and assigning crews</p><h3>Give every official a better home base.</h3></div>
             <p>Import schedules, share consistent game details, and see the season without taking away each official's private financial record.</p>
             <a class="ol-button ol-button-outline" href="/Account/Register?plan=Crew">Preview Crew <span>↗</span></a>
         </div>
@@ -135,7 +135,7 @@
     <section class="landing-pricing" id="pricing">
         <div class="landing-section-kicker landing-wrap"><span>Simple by design</span><b>02 / Pricing</b></div>
         <div class="pricing-heading landing-wrap">
-            <div><p class="landing-lime-label">Founding pricing</p><h2>Start free.<br />Upgrade when it <em>earns its keep.</em></h2></div>
+            <div><p class="landing-blue-label">Founding pricing</p><h2>Start free.<br />Upgrade when it <em>earns its keep.</em></h2></div>
             <div class="billing-toggle" aria-label="Billing frequency">
                 <button type="button" class="@(!annualBilling ? "active" : string.Empty)" @onclick="() => annualBilling = false">Monthly</button>
                 <button type="button" class="@(annualBilling ? "active" : string.Empty)" @onclick="() => annualBilling = true">Annual <span>Save 20%</span></button>
@@ -160,7 +160,7 @@
                             <li><span>✓</span>@feature</li>
                         }
                     </ul>
-                    <a class="ol-button @(plan.Featured ? "ol-button-lime" : "ol-button-dark-outline")" href="/Account/Register?plan=@plan.Name">
+                    <a class="ol-button @(plan.Featured ? "ol-button-blue" : "ol-button-dark-outline")" href="/Account/Register?plan=@plan.Name">
                         @(plan.Name == "Starter" ? "Start free" : $"Choose {plan.Name}") <span>↗</span>
                     </a>
                     @if (annualBilling && price > 0)
@@ -172,8 +172,8 @@
         </div>
 
         <div class="landing-final-cta landing-wrap">
-            <div><p class="landing-lime-label">Ready for the next assignment?</p><h2>Run your season<br />like it matters.</h2></div>
-            <div><p>Build a clean record from game one. No card required for the Starter plan.</p><a class="ol-button ol-button-lime" href="/Account/Register">Create your ledger <span>↗</span></a></div>
+            <div><p class="landing-blue-label">Ready for the next assignment?</p><h2>Run your season<br />like it matters.</h2></div>
+            <div><p>Build a clean record from game one. No card required for the Starter plan.</p><a class="ol-button ol-button-blue" href="/Account/Register">Create your ledger <span>↗</span></a></div>
         </div>
     </section>
 
