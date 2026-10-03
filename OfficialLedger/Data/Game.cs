@@ -1,10 +1,13 @@
-﻿namespace OfficialLedger.Models;
+namespace OfficialLedger.Models;
 
 public class Game
 {
     public int Id { get; set; }
 
     public string UserId { get; set; } = string.Empty;
+
+    public int? SeasonId { get; set; }
+    public Season? Season { get; set; }
 
     public int? LeagueId { get; set; }
     public League? League { get; set; }
@@ -22,3 +25,4 @@ public class Game
 
     public string? Notes { get; set; }
 }
+

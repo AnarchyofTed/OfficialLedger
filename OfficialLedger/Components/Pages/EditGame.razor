@@ -1,4 +1,4 @@
-﻿@page "/games/edit/{GameId:int}"
+@page "/games/edit/{GameId:int}"
 @attribute [Authorize]
 @rendermode InteractiveServer
 
@@ -40,9 +40,13 @@
     else
     {
         <div class="form-card">
-            <div class="form-card-heading"><span>@Input.GameDate.ToString("dd")</span><div><h2>@Input.LocationName</h2><p>@Input.GameDate.ToString("MMMM d, yyyy")</p></div></div>
+            <div class="form-card-heading"><span>@(Input.GameDate?.ToString("dd"))</span><div><h2>@Input.LocationName</h2><p>@(Input.GameDate?.ToString("MMMM d, yyyy"))</p></div></div>
             <EditForm Model="Input" OnValidSubmit="HandleValidSubmit" FormName="editGameForm">
                 <DataAnnotationsValidator />
+                @if (seasonError is not null)
+                {
+                    <div class="validation-summary" role="alert">@seasonError</div>
+                }
 
                 @if (hasSubmitted && isEditMode)
                 {
@@ -51,11 +55,23 @@
 
                 <div class="form-grid">
                     <div class="form-field">
-                        <label for="gameDate">Game Date</label>
+                        <label for="season">Season *</label>
+                        <InputSelect id="season" @bind-Value="Input.SeasonId" class="form-input" disabled="@(!isEditMode)">
+                            <option value="">Select season</option>
+                            @foreach (var season in seasons)
+                            {
+                                <option value="@season.Id">@season.Name</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => Input.SeasonId" />
+                    </div>
+                    <div class="form-field">
+                        <label for="gameDate">Game Date *</label>
                         <InputDate id="gameDate"
                                    @bind-Value="Input.GameDate"
                                    class="form-input"
                                    disabled="@(!isEditMode)" />
+                        <ValidationMessage For="() => Input.GameDate" />
                     </div>
 
                     <div class="form-field">
@@ -82,7 +98,7 @@
 
                     <div class="form-field">
                         <label for="feeAmount">Fee Amount</label>
-                        <InputNumber id="feeAmount"
+                        <InputNumber id="feeAmount" placeholder="0"
                                      @bind-Value="Input.FeeAmount"
                                      class="form-input"
                                      disabled="@(!isEditMode)" />
@@ -90,7 +106,7 @@
 
                     <div class="form-field">
                         <label for="milesDriven">Miles Driven</label>
-                        <InputNumber id="milesDriven"
+                        <InputNumber id="milesDriven" placeholder="0"
                                      @bind-Value="Input.MilesDriven"
                                      class="form-input"
                                      disabled="@(!isEditMode)" />
@@ -152,6 +168,8 @@
     private bool isEditMode;
     private string? loadError;
     private List<SportType> sportTypes = new();
+    private List<Season> seasons = new();
+    private string? seasonError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,6 +195,8 @@
             return;
         }
 
+        seasons = await Db.Seasons.Where(x => x.UserId == user.Id || x.UserId == null)
+            .OrderByDescending(x => x.StartDate).ToListAsync();
         Input = MapFromGame(game);
         OriginalInput = CloneInput(Input);
 
@@ -217,11 +237,18 @@
             return;
         }
 
-        dbGame.GameDate = Input.GameDate;
+        seasonError = null;
+        if (!await Db.Seasons.AnyAsync(x => x.Id == Input.SeasonId && (x.UserId == user.Id || x.UserId == null)))
+        {
+            seasonError = "Select an available season.";
+            return;
+        }
+        dbGame.SeasonId = Input.SeasonId;
+        dbGame.GameDate = Input.GameDate!.Value;
         dbGame.SportTypeId = Input.SportTypeId!.Value;
-        dbGame.LocationName = Input.LocationName;
-        dbGame.FeeAmount = Input.FeeAmount;
-        dbGame.MilesDriven = Input.MilesDriven;
+        dbGame.LocationName = Input.LocationName ?? string.Empty;
+        dbGame.FeeAmount = Input.FeeAmount ?? 0m;
+        dbGame.MilesDriven = Input.MilesDriven ?? 0m;
         dbGame.IsPaid = Input.IsPaid;
         dbGame.Notes = Input.Notes;
 
@@ -255,6 +282,7 @@
     {
         return new EditGameInputModel
         {
+            SeasonId = game.SeasonId,
             GameDate = game.GameDate,
             SportTypeId = game.SportTypeId,
             LocationName = game.LocationName,
@@ -269,6 +297,7 @@
     {
         return new EditGameInputModel
         {
+            SeasonId = input.SeasonId,
             GameDate = input.GameDate,
             SportTypeId = input.SportTypeId,
             LocationName = input.LocationName,
@@ -281,20 +310,22 @@
 
     public class EditGameInputModel
     {
+        [Required(ErrorMessage = "Season is required.")]
+        public int? SeasonId { get; set; }
+
         [Required(ErrorMessage = "Sport is required.")]
         public int? SportTypeId { get; set; }
 
-        [Required(ErrorMessage = "Location is required.")]
         public string LocationName { get; set; } = string.Empty;
 
-        [Required]
-        public DateTime GameDate { get; set; }
+        [Required(ErrorMessage = "Game date is required.")]
+        public DateTime? GameDate { get; set; }
 
         [Range(0, 10000, ErrorMessage = "Fee amount must be 0 or greater.")]
-        public decimal FeeAmount { get; set; }
+        public decimal? FeeAmount { get; set; } = 0m;
 
         [Range(0, 1000, ErrorMessage = "Miles driven must be 0 or greater.")]
-        public decimal MilesDriven { get; set; }
+        public decimal? MilesDriven { get; set; } = 0m;
 
         public bool IsPaid { get; set; }
 
@@ -331,3 +362,4 @@
         NavigationManager.NavigateTo("/games");
     }
 }
+

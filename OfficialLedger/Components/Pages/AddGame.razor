@@ -1,4 +1,4 @@
-﻿@page "/add-game"
+@page "/add-game"
 @attribute [Authorize]
 @rendermode InteractiveServer
 
@@ -30,6 +30,10 @@
         <div class="form-card-heading"><span>01</span><div><h2>Assignment details</h2><p>Required fields are marked by the form.</p></div></div>
         <EditForm Model="Input" OnValidSubmit="HandleValidSubmit" FormName="addGameForm">
             <DataAnnotationsValidator />
+                @if (seasonError is not null)
+                {
+                    <div class="validation-summary" role="alert">@seasonError</div>
+                }
 
             @if (!string.IsNullOrWhiteSpace(SuccessMessage))
             {
@@ -42,9 +46,22 @@
             }
 
             <div class="form-grid">
+                    <div class="form-field">
+                        <label for="season">Season *</label>
+                        <InputSelect id="season" @bind-Value="Input.SeasonId" class="form-input">
+                            <option value="">Select season</option>
+                            @foreach (var season in seasons)
+                            {
+                                <option value="@season.Id">@season.Name</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => Input.SeasonId" />
+                        <a href="/add-season?returnTo=add-game">+ Add Season</a>
+                    </div>
                 <div class="form-field">
-                    <label for="gameDate">Game Date</label>
+                    <label for="gameDate">Game Date *</label>
                     <InputDate id="gameDate" @bind-Value="Input.GameDate" class="form-input" />
+                        <ValidationMessage For="() => Input.GameDate" />
                 </div>
 
                 <div class="form-field">
@@ -65,12 +82,12 @@
 
                 <div class="form-field">
                     <label for="feeAmount">Fee Amount</label>
-                    <InputNumber id="feeAmount" @bind-Value="Input.FeeAmount" class="form-input" />
+                    <InputNumber id="feeAmount" placeholder="0" @bind-Value="Input.FeeAmount" class="form-input" />
                 </div>
 
                 <div class="form-field">
                     <label for="milesDriven">Miles Driven</label>
-                    <InputNumber id="milesDriven" @bind-Value="Input.MilesDriven" class="form-input" />
+                    <InputNumber id="milesDriven" placeholder="0" @bind-Value="Input.MilesDriven" class="form-input" />
                 </div>
 
                 <div class="form-field checkbox-field">
@@ -88,7 +105,7 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="primary-btn" @onclick="MarkSubmitted">Save Game</button>
+                <button type="submit" disabled="@(!seasons.Any())" class="primary-btn" @onclick="MarkSubmitted">Save Game</button>
                 <button type="button" class="secondary-btn" @onclick="Cancel">Cancel</button>
             </div>
         </EditForm>
@@ -104,9 +121,20 @@
     private string? SuccessMessage;
     private bool hasSubmitted;
     private List<SportType> sportTypes = new();
+    private List<Season> seasons = new();
+    private string? seasonError;
+
+    [SupplyParameterFromQuery]
+    public int? SeasonId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user is null) return;
+        seasons = await Db.Seasons.Where(x => x.UserId == user.Id || x.UserId == null)
+            .OrderByDescending(x => x.StartDate).ToListAsync();
+        if (seasons.Any(x => x.Id == SeasonId)) Input.SeasonId = SeasonId;
         sportTypes = await Db.SportTypes
             .OrderBy(x => x.Name)
             .ToListAsync();
@@ -127,14 +155,22 @@
             return;
         }
 
+        seasonError = null;
+        if (!await Db.Seasons.AnyAsync(x => x.Id == Input.SeasonId && (x.UserId == user.Id || x.UserId == null)))
+        {
+            seasonError = "Select an available season.";
+            return;
+        }
+
         var game = new Game
         {
             UserId = user.Id,
-            GameDate = Input.GameDate,
+            SeasonId = Input.SeasonId,
+            GameDate = Input.GameDate!.Value,
             SportTypeId = Input.SportTypeId!.Value,
-            LocationName = Input.LocationName,
-            FeeAmount = Input.FeeAmount,
-            MilesDriven = Input.MilesDriven,
+            LocationName = Input.LocationName ?? string.Empty,
+            FeeAmount = Input.FeeAmount ?? 0m,
+            MilesDriven = Input.MilesDriven ?? 0m,
             IsPaid = Input.IsPaid,
             Notes = Input.Notes
         };
@@ -161,23 +197,26 @@
 
     public class AddGameInputModel
     {
+        [Required(ErrorMessage = "Season is required.")]
+        public int? SeasonId { get; set; }
+
         [Required(ErrorMessage = "Sport is required.")]
         public int? SportTypeId { get; set; }
 
-        [Required(ErrorMessage = "Location is required.")]
         public string LocationName { get; set; } = string.Empty;
 
-        [Required]
-        public DateTime GameDate { get; set; }
+        [Required(ErrorMessage = "Game date is required.")]
+        public DateTime? GameDate { get; set; }
 
         [Range(0, 10000, ErrorMessage = "Fee amount must be 0 or greater.")]
-        public decimal FeeAmount { get; set; }
+        public decimal? FeeAmount { get; set; } = 0m;
 
         [Range(0, 1000, ErrorMessage = "Miles driven must be 0 or greater.")]
-        public decimal MilesDriven { get; set; }
+        public decimal? MilesDriven { get; set; } = 0m;
 
         public bool IsPaid { get; set; }
 
         public string? Notes { get; set; }
     }
 }
+
