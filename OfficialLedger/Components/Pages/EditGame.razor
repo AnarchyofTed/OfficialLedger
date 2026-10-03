@@ -1,4 +1,4 @@
-﻿@page "/games/edit/{GameId:int}"
+@page "/games/edit/{GameId:int}"
 @attribute [Authorize]
 @rendermode InteractiveServer
 
@@ -43,6 +43,10 @@
             <div class="form-card-heading"><span>@Input.GameDate.ToString("dd")</span><div><h2>@Input.LocationName</h2><p>@Input.GameDate.ToString("MMMM d, yyyy")</p></div></div>
             <EditForm Model="Input" OnValidSubmit="HandleValidSubmit" FormName="editGameForm">
                 <DataAnnotationsValidator />
+                @if (seasonError is not null)
+                {
+                    <div class="validation-summary" role="alert">@seasonError</div>
+                }
 
                 @if (hasSubmitted && isEditMode)
                 {
@@ -50,6 +54,17 @@
                 }
 
                 <div class="form-grid">
+                    <div class="form-field">
+                        <label for="season">Season</label>
+                        <InputSelect id="season" @bind-Value="Input.SeasonId" class="form-input" disabled="@(!isEditMode)">
+                            <option value="">Select season</option>
+                            @foreach (var season in seasons)
+                            {
+                                <option value="@season.Id">@season.Name</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => Input.SeasonId" />
+                    </div>
                     <div class="form-field">
                         <label for="gameDate">Game Date</label>
                         <InputDate id="gameDate"
@@ -152,6 +167,8 @@
     private bool isEditMode;
     private string? loadError;
     private List<SportType> sportTypes = new();
+    private List<Season> seasons = new();
+    private string? seasonError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,6 +194,8 @@
             return;
         }
 
+        seasons = await Db.Seasons.Where(x => x.UserId == user.Id || x.UserId == null)
+            .OrderByDescending(x => x.StartDate).ToListAsync();
         Input = MapFromGame(game);
         OriginalInput = CloneInput(Input);
 
@@ -217,6 +236,13 @@
             return;
         }
 
+        seasonError = null;
+        if (!await Db.Seasons.AnyAsync(x => x.Id == Input.SeasonId && (x.UserId == user.Id || x.UserId == null)))
+        {
+            seasonError = "Select an available season.";
+            return;
+        }
+        dbGame.SeasonId = Input.SeasonId;
         dbGame.GameDate = Input.GameDate;
         dbGame.SportTypeId = Input.SportTypeId!.Value;
         dbGame.LocationName = Input.LocationName;
@@ -255,6 +281,7 @@
     {
         return new EditGameInputModel
         {
+            SeasonId = game.SeasonId,
             GameDate = game.GameDate,
             SportTypeId = game.SportTypeId,
             LocationName = game.LocationName,
@@ -269,6 +296,7 @@
     {
         return new EditGameInputModel
         {
+            SeasonId = input.SeasonId,
             GameDate = input.GameDate,
             SportTypeId = input.SportTypeId,
             LocationName = input.LocationName,
@@ -281,6 +309,9 @@
 
     public class EditGameInputModel
     {
+        [Required(ErrorMessage = "Season is required.")]
+        public int? SeasonId { get; set; }
+
         [Required(ErrorMessage = "Sport is required.")]
         public int? SportTypeId { get; set; }
 
@@ -331,3 +362,4 @@
         NavigationManager.NavigateTo("/games");
     }
 }
+

@@ -20,5 +20,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<League>().ToTable("League");
         builder.Entity<SportType>().ToTable("SportType");
         builder.Entity<Season>().ToTable("Season");
+        builder.Entity<Season>().Property(x => x.UserId).HasMaxLength(450);
+        builder.Entity<Season>().Property(x => x.SportImage).HasMaxLength(32);
+        builder.Entity<Season>().HasIndex(x => x.UserId);
+        builder.Entity<Game>().HasOne(x => x.Season).WithMany()
+            .HasForeignKey(x => x.SeasonId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+

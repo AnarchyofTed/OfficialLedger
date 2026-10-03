@@ -3,7 +3,10 @@ namespace OfficialLedger.Models;
 public class Season
 {
     public int Id { get; set; }
+    public string? UserId { get; set; }
+    public string SportImage { get; set; } = "baseball";
     public string Name { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
 }
+

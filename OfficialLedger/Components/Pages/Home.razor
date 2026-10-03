@@ -4,7 +4,7 @@
 
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
-@using System.Text.RegularExpressions
+
 @using OfficialLedger.Data
 @using OfficialLedger.Models
 
@@ -30,7 +30,7 @@
         <div class="dashboard-header-actions">
             <button type="button" class="primary-btn dashboard-add-game" @onclick="GoToAddGame">Add game <span>+</span></button>
             <div class="season-picker">
-                <button type="button" class="season-btn" @onclick="ToggleSeasonMenu">@selectedSeasonName <span>⌄</span></button>
+                <button type="button" class="season-btn" @onclick="ToggleSeasonMenu"><img class="season-sport-image" src="@SeasonImages.Path(selectedSeasonImage)" alt="" /> @selectedSeasonName <span>⌄</span></button>
 
                 @if (isSeasonMenuOpen)
                 {
@@ -43,9 +43,10 @@
                         {
                             @foreach (var season in seasons)
                             {
-                                <button type="button" class="season-option" @onclick="() => SelectSeason(season)">@season.Name</button>
+                                <button type="button" class="season-option" @onclick="() => SelectSeason(season)"><img class="season-sport-image" src="@SeasonImages.Path(season.SportImage)" alt="" /> @season.Name</button>
                             }
                         }
+                    <button type="button" class="season-option season-option-add" @onclick="GoToAddSeason">+ Add Season</button>
                     </div>
                 }
             </div>
@@ -160,7 +161,12 @@
 @code {
     private List<Season> seasons = new();
     private bool isSeasonMenuOpen;
-    private string selectedSeasonName = "2024 Baseball Season";
+    private string selectedSeasonName = "Select a season";
+    private string selectedSeasonImage = "baseball";
+    private Season? selectedSeason;
+
+    [SupplyParameterFromQuery]
+    public int? SeasonId { get; set; }
     private string selectedSeasonDateRange = "Welcome to OfficialLedger.";
     private decimal totalEarnings;
     private decimal totalMilesDriven;
@@ -178,6 +184,8 @@
 
     private async Task SelectSeason(Season season)
     {
+        selectedSeason = season;
+        selectedSeasonImage = season.SportImage;
         selectedSeasonName = season.Name;
         selectedSeasonDateRange = FormatSeasonDateRange(season);
         isSeasonMenuOpen = false;
@@ -215,13 +223,18 @@
         UserName = name;
 
         seasons = await Db.Seasons
-            .OrderBy(x => x.StartDate)
+            .Where(x => x.UserId == userId || x.UserId == null)
+            .OrderByDescending(x => x.StartDate)
             .ToListAsync();
 
         if (seasons.Any())
         {
-            selectedSeasonName = seasons[0].Name;
-            selectedSeasonDateRange = FormatSeasonDateRange(seasons[0]);
+            selectedSeason = seasons.FirstOrDefault(x => x.Id == SeasonId)
+                ?? seasons.FirstOrDefault(x => x.StartDate <= DateTime.Today && x.EndDate >= DateTime.Today)
+                ?? seasons[0];
+            selectedSeasonName = selectedSeason.Name;
+            selectedSeasonImage = selectedSeason.SportImage;
+            selectedSeasonDateRange = FormatSeasonDateRange(selectedSeason);
         }
 
         await LoadTotalEarningsAsync();
@@ -241,19 +254,17 @@
             return;
         }
 
-        DateTime? seasonStart = null;
-        DateTime? seasonEnd = null;
-
-        var seasonYearMatch = Regex.Match(selectedSeasonName, @"\b(19|20)\d{2}\b");
-        if (seasonYearMatch.Success && int.TryParse(seasonYearMatch.Value, out var seasonYear))
+        var seasonId = selectedSeason?.Id;
+        var start = selectedSeason?.StartDate.Date;
+        var endExclusive = selectedSeason?.EndDate.Date.AddDays(1);
+        var includeLegacyGames = selectedSeason is not null && selectedSeason.UserId is null;
+        var query = Db.Games.Where(x => x.UserId == userId &&
+            (x.SeasonId == seasonId ||
+             (includeLegacyGames && x.SeasonId == null && x.GameDate >= start && x.GameDate < endExclusive)));
+        if (selectedSeason is null)
         {
-            seasonStart = new DateTime(seasonYear, 1, 1);
-            seasonEnd = seasonStart.Value.AddYears(1);
+            query = Db.Games.Where(x => x.UserId == userId);
         }
-
-        var query = Db.Games.Where(x =>
-            x.UserId == userId &&
-            (!seasonStart.HasValue || (x.GameDate >= seasonStart.Value && x.GameDate < seasonEnd!.Value)));
 
         totalEarnings = await query.SumAsync(x => x.FeeAmount);
         totalMilesDriven = await query.SumAsync(x => x.MilesDriven);
@@ -327,6 +338,8 @@
         await LoadTotalEarningsAsync();
     }
 
+    private void GoToAddSeason() => NavigationManager.NavigateTo("/add-season");
+
     private void GoToGames()
     {
         NavigationManager.NavigateTo("/games");
@@ -334,7 +347,7 @@
 
     private void GoToAddGame()
     {
-        NavigationManager.NavigateTo("/add-game");
+        NavigationManager.NavigateTo(selectedSeason is null ? "/add-game" : $"/add-game?seasonId={selectedSeason.Id}");
     }
 
     private sealed class UnpaidGameGroupRow
@@ -353,3 +366,4 @@
         public bool IsPaid { get; set; }
     }
 }
+
