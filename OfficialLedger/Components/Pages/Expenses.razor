@@ -1,0 +1,253 @@
+@page "/expenses"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using OfficialLedger.Data
+@using OfficialLedger.Models
+@inject ApplicationDbContext Db
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject ILogger<Expenses> Logger
+
+<PageTitle>Expenses | Blue Ledger</PageTitle>
+<div class="page-content expenses-page">
+    <header class="page-header">
+        <div><p class="page-kicker">Keep your records together</p><h1 class="page-title">Expenses</h1>
+            <p class="page-subtitle">Record meals, camps, equipment, clothing, and other officiating expenses.</p></div>
+        <button type="button" class="primary-btn" disabled="@busy" @onclick="StartAdd">Add Expense <span>+</span></button>
+    </header>
+
+    @if (error is not null)
+    {
+        <div class="validation-summary" role="alert">@error</div>
+    }
+    @if (showForm)
+    {
+        <section class="form-card expense-form">
+            <h2>@(editingId.HasValue ? "Edit Expense" : "Add Expense")</h2>
+            <EditForm Model="Input" OnValidSubmit="SaveExpense" FormName="expenseForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-summary" />
+                <div class="form-grid">
+                    <div class="form-field"><label for="expenseDate">Date *</label>
+                        <InputDate id="expenseDate" @bind-Value="Input.ExpenseDate" class="form-input" />
+                        <ValidationMessage For="() => Input.ExpenseDate" /></div>
+                    <div class="form-field"><label for="expenseCategory">Category *</label>
+                        <InputSelect id="expenseCategory" @bind-Value="Input.Category" class="form-input">
+                            @foreach (var category in ExpenseInputModel.Categories)
+                            {
+                                <option value="@category">@category</option>
+                            }
+                        </InputSelect></div>
+                    <div class="form-field"><label for="expenseAmount">Amount *</label>
+                        <InputNumber id="expenseAmount" @bind-Value="Input.Amount" class="form-input" min="0.01" step="0.01" placeholder="0.00" />
+                        <ValidationMessage For="() => Input.Amount" /></div>
+                    <div class="form-field"><label for="expenseVendor">Vendor / payee</label>
+                        <InputText id="expenseVendor" @bind-Value="Input.Vendor" class="form-input" maxlength="200" /></div>
+                    <div class="form-field form-field-full"><label for="expensePurpose">Business purpose / description</label>
+                        <InputText id="expensePurpose" @bind-Value="Input.BusinessPurpose" class="form-input" maxlength="500" placeholder="Example: Registration for umpire training camp" /></div>
+                    <div class="form-field form-field-full"><label for="expenseNotes">Notes</label>
+                        <InputTextArea id="expenseNotes" @bind-Value="Input.Notes" class="form-input form-textarea" maxlength="2000" /></div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn" disabled="@busy">@(busy ? "Saving…" : "Save Expense")</button>
+                    <button type="button" class="secondary-btn" disabled="@busy" @onclick="Cancel">Cancel</button>
+                </div>
+            </EditForm>
+        </section>
+    }
+    @if (loading)
+    {
+        <div class="loading-card">Loading expenses...</div>
+    }
+    else
+    {
+        <div class="expense-list-header">
+            <div><span class="expense-total-label">Recorded expenses</span>
+                <strong class="expense-total">@VisibleExpenses.Sum(x => x.Amount).ToString("C2")</strong>
+                <small>@VisibleExpenses.Count() records</small></div>
+            <label class="expense-year-label">Year
+                <select @bind="selectedYear" class="form-input">
+                    <option value="">All years</option>
+                    @foreach (var year in expenses.Select(x => x.ExpenseDate.Year).Distinct().OrderByDescending(x => x))
+                    {
+                        <option value="@year">@year</option>
+                    }
+                </select>
+            </label>
+        </div>
+        @if (!VisibleExpenses.Any())
+        {
+            <div class="empty-state"><h2>No expenses recorded.</h2><p>Add an expense to start keeping your records together.</p></div>
+        }
+        else
+        {
+            <div class="games-table-card expense-table-wrap">
+                <table class="expense-table">
+                    <thead><tr><th>Date</th><th>Category</th><th>Details</th><th>Amount</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        @foreach (var expense in VisibleExpenses)
+                        {
+                            <tr @key="expense.Id">
+                                <td>@expense.ExpenseDate.ToString("MMM d, yyyy")</td>
+                                <td>@expense.Category</td>
+                                <td class="expense-details"><strong>@expense.Vendor</strong><span>@expense.BusinessPurpose</span>
+                                    @if (!string.IsNullOrWhiteSpace(expense.Notes)) { <small>@expense.Notes</small> }</td>
+                                <td class="expense-amount">@expense.Amount.ToString("C2")</td>
+                                <td><div class="expense-row-actions">
+                                    <button type="button" class="secondary-btn" disabled="@busy" @onclick="() => StartEdit(expense)">Edit</button>
+                                    <button type="button" class="danger-btn" disabled="@busy" @onclick="() => DeleteExpense(expense.Id)">Delete</button>
+                                </div></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        <p class="expense-record-note">Keep receipts with your records. Expense totals are amounts recorded, not a calculation of tax deductions.</p>
+    }
+</div>
+
+@code {
+    private List<Expense> expenses = [];
+    private ExpenseInputModel Input { get; set; } = new();
+    private bool loading = true;
+    private bool busy;
+    private bool showForm;
+    private int? editingId;
+    private int? selectedYear;
+    private string? error;
+    private string? userId;
+    private IEnumerable<Expense> VisibleExpenses => expenses.Where(x => !selectedYear.HasValue || x.ExpenseDate.Year == selectedYear.Value);
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = await CurrentUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            NavigationManager.NavigateTo("/Account/Login");
+            return;
+        }
+        await Reload();
+        loading = false;
+    }
+
+    private async Task<string?> CurrentUserId()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return auth.User.Identity?.IsAuthenticated == true ? auth.User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
+    }
+
+    private async Task Reload()
+    {
+        expenses = await Db.Expenses.AsNoTracking().Where(x => x.UserId == userId)
+            .OrderByDescending(x => x.ExpenseDate).ThenByDescending(x => x.Id).ToListAsync();
+    }
+
+    private void StartAdd()
+    {
+        Input = new();
+        editingId = null;
+        error = null;
+        showForm = true;
+    }
+
+    private void StartEdit(Expense expense)
+    {
+        editingId = expense.Id;
+        Input = new()
+        {
+            ExpenseDate = expense.ExpenseDate, Category = expense.Category, Amount = expense.Amount,
+            Vendor = expense.Vendor, BusinessPurpose = expense.BusinessPurpose, Notes = expense.Notes
+        };
+        error = null;
+        showForm = true;
+    }
+
+    private void Cancel() { showForm = false; editingId = null; error = null; }
+
+    private async Task SaveExpense()
+    {
+        if (busy) return;
+        busy = true;
+        error = null;
+        Expense? record = null;
+        try
+        {
+            var currentUser = await CurrentUserId();
+            if (string.IsNullOrWhiteSpace(currentUser) || currentUser != userId)
+            {
+                NavigationManager.NavigateTo("/Account/Login");
+                return;
+            }
+            if (editingId.HasValue)
+            {
+                record = await Db.Expenses.FirstOrDefaultAsync(x => x.Id == editingId && x.UserId == currentUser);
+                if (record is null) { error = "Expense not found."; return; }
+            }
+            else
+            {
+                record = new Expense { UserId = currentUser };
+                Db.Expenses.Add(record);
+            }
+            record.ExpenseDate = Input.ExpenseDate!.Value.Date;
+            record.Category = Input.Category;
+            record.Amount = Input.Amount!.Value;
+            record.Vendor = Input.Vendor?.Trim();
+            record.BusinessPurpose = Input.BusinessPurpose?.Trim();
+            record.Notes = Input.Notes?.Trim();
+            await Db.SaveChangesAsync();
+            await Reload();
+            Cancel();
+        }
+        catch (DbUpdateException ex)
+        {
+            Logger.LogError(ex, "Could not save expense.");
+            error = "The expense could not be saved. Please try again.";
+        }
+        finally
+        {
+            if (record is not null) Db.Entry(record).State = EntityState.Detached;
+            busy = false;
+        }
+    }
+
+    private async Task DeleteExpense(int id)
+    {
+        if (busy || !await JS.InvokeAsync<bool>("confirm", "Delete this expense?")) return;
+        if (busy) return;
+        busy = true;
+        error = null;
+        Expense? record = null;
+        try
+        {
+            var currentUser = await CurrentUserId();
+            if (string.IsNullOrWhiteSpace(currentUser) || currentUser != userId)
+            {
+                NavigationManager.NavigateTo("/Account/Login");
+                return;
+            }
+            record = await Db.Expenses.FirstOrDefaultAsync(x => x.Id == id && x.UserId == currentUser);
+            if (record is null) { error = "Expense not found."; return; }
+            Db.Expenses.Remove(record);
+            await Db.SaveChangesAsync();
+            if (editingId == id) Cancel();
+            await Reload();
+        }
+        catch (DbUpdateException ex)
+        {
+            Logger.LogError(ex, "Could not delete expense.");
+            error = "The expense could not be deleted. Please try again.";
+        }
+        finally
+        {
+            if (record is not null) Db.Entry(record).State = EntityState.Detached;
+            busy = false;
+        }
+    }
+}

@@ -1,2 +1,6 @@
 /* Layout styling lives in wwwroot/app.css so the public site, account pages,
    and authenticated application share one editable design system. */
+
+@media (max-width: 840px) {
+    .sidebar-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}

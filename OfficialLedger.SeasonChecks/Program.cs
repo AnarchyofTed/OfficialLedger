@@ -67,3 +67,29 @@ var seasonModel = db.Model.FindEntityType(typeof(Season))!;
 Check(seasonModel.FindProperty(nameof(Season.UserId))!.GetMaxLength() == 450, "Season user ID mapping is incorrect.");
 Check(seasonModel.FindProperty(nameof(Season.SportImage))!.GetMaxLength() == 32, "Season image mapping is incorrect.");
 Console.WriteLine("Season validation and EF model checks passed.");
+
+var expenseInput = new ExpenseInputModel { Category = "Meals", Amount = 12.50m, ExpenseDate = DateTime.Today };
+Check(Valid(expenseInput), "Valid expense was rejected.");
+expenseInput.Amount = null;
+Check(!Valid(expenseInput), "Expense without amount accepted.");
+expenseInput.Amount = 0;
+Check(!Valid(expenseInput), "Zero expense accepted.");
+expenseInput.Amount = -5;
+Check(!Valid(expenseInput), "Negative expense accepted.");
+expenseInput.Amount = 12.345m;
+Check(!Valid(expenseInput), "Expense with fractional cents accepted.");
+expenseInput.Amount = 12.50m;
+expenseInput.ExpenseDate = null;
+Check(!Valid(expenseInput), "Expense without date accepted.");
+expenseInput.ExpenseDate = DateTime.Today;
+expenseInput.Category = "Unknown";
+Check(!Valid(expenseInput), "Unknown expense category accepted.");
+expenseInput.Category = "Other";
+Check(Valid(expenseInput), "Expense with optional vendor and notes rejected.");
+var expenseModel = db.Model.FindEntityType(typeof(Expense))!;
+Check(expenseModel.FindProperty(nameof(Expense.Amount))!.GetPrecision() == 18 &&
+      expenseModel.FindProperty(nameof(Expense.Amount))!.GetScale() == 2, "Expense amount precision is incorrect.");
+Check(expenseModel.FindProperty(nameof(Expense.ExpenseDate))!.GetColumnType() == "date", "Expense date storage is incorrect.");
+Check(expenseModel.GetIndexes().Any(x => x.Properties.Select(p => p.Name).SequenceEqual(new[] { "UserId", "ExpenseDate" })),
+    "Expense ownership/date index is missing.");
+Console.WriteLine("Expense validation and model checks passed.");
