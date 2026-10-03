@@ -47,8 +47,8 @@
                     <div class="form-field"><label for="expenseAmount">Amount *</label>
                         <InputNumber id="expenseAmount" @bind-Value="Input.Amount" class="form-input" min="0.01" step="0.01" placeholder="0.00" />
                         <ValidationMessage For="() => Input.Amount" /></div>
-                    <div class="form-field"><label for="expenseVendor">Vendor / payee</label>
-                        <InputText id="expenseVendor" @bind-Value="Input.Vendor" class="form-input" maxlength="200" /></div>
+                    <div class="form-field"><label for="expenseVendor">Paid To</label>
+                        <InputText id="expenseVendor" @bind-Value="Input.Vendor" class="form-input" maxlength="200" placeholder="Amazon, Academy, or camp name" /></div>
                     <div class="form-field form-field-full"><label for="expensePurpose">Business purpose / description</label>
                         <InputText id="expensePurpose" @bind-Value="Input.BusinessPurpose" class="form-input" maxlength="500" placeholder="Example: Registration for umpire training camp" /></div>
                     <div class="form-field form-field-full"><label for="expenseNotes">Notes</label>
