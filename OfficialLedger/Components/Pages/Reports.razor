@@ -18,24 +18,40 @@
 <div class="page-content reports-page">
     <header class="page-header">
         <div>
-            <p class="page-kicker">Season totals</p>
+            <p class="page-kicker">Ledger totals</p>
             <h1 class="page-title">Reports</h1>
             <p class="page-subtitle">A clean summary of the work, travel, and payments in your ledger.</p>
         </div>
-        <span class="report-period">All recorded games</span>
+        <select class="report-period report-filter" aria-label="Report scope" @bind="selectedFilter" @bind:after="ApplyFilter" disabled="@isLoading">
+            <optgroup label="All Recorded Games">
+                <option value="all">All Recorded Games</option>
+            </optgroup>
+            <optgroup label="By Year">
+                @foreach (var year in years)
+                {
+                    <option value="@($"year:{year}")">@year</option>
+                }
+            </optgroup>
+            <optgroup label="By Season">
+                @foreach (var season in seasons)
+                {
+                    <option value="@($"season:{season.Id}")">@season.Name</option>
+                }
+            </optgroup>
+        </select>
     </header>
 
     @if (isLoading)
     {
         <div class="loading-card">Building your season report...</div>
     }
-    else if (totalGames == 0)
+    else if (totalGames == 0 && reportExpenses.Count == 0)
     {
         <div class="empty-state">
             <span class="empty-state-mark" aria-hidden="true">▥</span>
-            <h2>No report data yet.</h2>
-            <p>Your earnings and mileage summaries will appear after you add a game.</p>
-            <a class="add-game-btn" href="/add-game">Add your first game</a>
+            <h2>@(selectedFilter == "all" ? "No report data yet." : "No records in this selection.")</h2>
+            <p>@(selectedFilter == "all" ? "Your summaries will appear after you add a game or expense." : "Choose another year or season, or add a game or expense.")</p>
+            <a class="add-game-btn" href="/add-game">Add a game</a>
         </div>
     }
     else
@@ -44,7 +60,7 @@
             <article><span>Total earnings</span><strong>@totalEarnings.ToString("C0")</strong><small>Across @totalGames games</small></article>
             <article><span>Paid</span><strong>@paidEarnings.ToString("C0")</strong><small>@paidGames completed payments</small></article>
             <article class="report-outstanding"><span>Outstanding</span><strong>@outstandingEarnings.ToString("C0")</strong><small>@unpaidGames awaiting payment</small></article>
-            <article><span>Miles logged</span><strong>@totalMiles.ToString("N0")</strong><small>Season travel record</small></article>
+            <article><span>Miles logged</span><strong>@totalMiles.ToString("N0")</strong><small>Recorded travel</small></article>
         </section>
 
         <section class="report-grid">
@@ -68,15 +84,52 @@
             </article>
         </section>
 
+
+        <section class="report-card report-expenses-card">
+            <div class="report-card-header">
+                <div><p class="page-kicker">Expenses</p><h2>Recorded spending</h2></div>
+                <a class="secondary-btn" href="/expenses">View Expenses</a>
+            </div>
+            <div class="report-expense-summary">
+                <strong class="report-expense-total">@totalExpenses.ToString("C2")</strong>
+                <span>@reportExpenses.Count expense records</span>
+            </div>
+            @if (reportExpenses.Count == 0)
+            {
+                <p class="owes-empty-state">No expenses in this selection.</p>
+            }
+            else
+            {
+                <table class="report-expense-table">
+                    <thead><tr><th>Category</th><th>Records</th><th>Amount</th></tr></thead>
+                    <tbody>
+                        @foreach (var category in expenseSummaries)
+                        {
+                            <tr><td>@category.Category</td><td>@category.Count</td><td>@category.Amount.ToString("C2")</td></tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            <p class="report-expense-note">Year reports use expense dates. Season reports include expenses dated within the season's start and end dates.</p>
+        </section>
+
         <section class="report-note">
             <span aria-hidden="true">i</span>
-            <div><strong>Keep the books. Stay ready.</strong><p>Blue Ledger keeps your game and mileage records organized, but it does not provide tax advice. Confirm deductions and reporting requirements with a qualified tax professional.</p></div>
+            <div><strong>Keep the books. Stay ready.</strong><p>Blue Ledger keeps your game, expense, and mileage records organized, but it does not provide tax advice. Confirm deductions and reporting requirements with a qualified tax professional.</p></div>
         </section>
     }
 </div>
 
 @code {
     private bool isLoading = true;
+    private string selectedFilter = "all";
+    private List<Game> allGames = [];
+    private List<Expense> allExpenses = [];
+    private List<Expense> reportExpenses = [];
+    private List<ExpenseSummary> expenseSummaries = [];
+    private decimal totalExpenses;
+    private List<int> years = [];
+    private List<Season> seasons = [];
     private int totalGames;
     private int paidGames;
     private int unpaidGames;
@@ -99,10 +152,33 @@
             return;
         }
 
-        var games = await Db.Games
+        allGames = await Db.Games
             .Include(x => x.SportType)
             .Where(x => x.UserId == user.Id)
             .ToListAsync();
+
+        allExpenses = await Db.Expenses.AsNoTracking()
+            .Where(x => x.UserId == user.Id).ToListAsync();
+
+        years = allGames.Select(x => x.GameDate.Year).Distinct().OrderByDescending(x => x).ToList();
+        seasons = await Db.Seasons
+            .Where(x => x.UserId == user.Id || x.UserId == null)
+            .OrderByDescending(x => x.StartDate)
+            .ThenBy(x => x.Name)
+            .ToListAsync();
+
+        ApplyFilter();
+        isLoading = false;
+    }
+
+    private void ApplyFilter()
+    {
+        var games = ReportGameFilter.Apply(allGames, selectedFilter, seasons.Select(x => x.Id));
+        reportExpenses = ReportExpenseFilter.Apply(allExpenses, selectedFilter, seasons);
+        totalExpenses = reportExpenses.Sum(x => x.Amount);
+        expenseSummaries = reportExpenses.GroupBy(x => x.Category)
+            .Select(group => new ExpenseSummary(group.Key, group.Count(), group.Sum(x => x.Amount)))
+            .OrderByDescending(x => x.Amount).ThenBy(x => x.Category).ToList();
 
         totalGames = games.Count;
         paidGames = games.Count(x => x.IsPaid);
@@ -125,8 +201,9 @@
             .OrderByDescending(x => x.GameCount)
             .ToList();
 
-        isLoading = false;
     }
+
+    private sealed record ExpenseSummary(string Category, int Count, decimal Amount);
 
     private sealed class SportSummary
     {
