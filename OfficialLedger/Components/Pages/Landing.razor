@@ -128,7 +128,7 @@
             <div class="association-orbit" aria-hidden="true"><span>15</span><small>officials</small></div>
             <div><p class="landing-blue-label">For associations and assigning crews</p><h3>Give every official a better home base.</h3></div>
             <p>Import schedules, share consistent game details, and see the season without taking away each official's private financial record.</p>
-            <a class="ol-button ol-button-outline" href="/Account/Register?plan=Crew">Preview Crew <span>↗</span></a>
+            <a class="ol-button ol-button-outline" href="/Account/Register?plan=Pro">Explore Pro <span>↗</span></a>
         </div>
     </section>
 
@@ -136,15 +136,10 @@
         <div class="landing-section-kicker landing-wrap"><span>Simple by design</span><b>02 / Pricing</b></div>
         <div class="pricing-heading landing-wrap">
             <div><p class="landing-blue-label">Founding pricing</p><h2>Start free.<br />Upgrade when it <em>earns its keep.</em></h2></div>
-            <div class="billing-toggle" aria-label="Billing frequency">
-                <button type="button" class="@(!annualBilling ? "active" : string.Empty)" @onclick="() => annualBilling = false">Monthly</button>
-                <button type="button" class="@(annualBilling ? "active" : string.Empty)" @onclick="() => annualBilling = true">Annual <span>Save 20%</span></button>
-            </div>
         </div>
         <div class="pricing-grid landing-wrap">
             @foreach (var plan in plans)
             {
-                var price = annualBilling ? plan.AnnualPrice : plan.MonthlyPrice;
                 <article class="pricing-card @(plan.Featured ? "featured" : string.Empty)">
                     @if (plan.Featured)
                     {
@@ -152,7 +147,13 @@
                     }
                     <div class="pricing-card-top">
                         <div><h3>@plan.Name</h3><p>@plan.Description</p></div>
-                        <div class="pricing-price"><strong>$@price</strong><span>/ month</span></div>
+                        <div class="pricing-price">
+                            <strong>$@plan.Price</strong>
+                            @if (plan.Price > 0)
+                            {
+                                <span>/ year</span>
+                            }
+                        </div>
                     </div>
                     <ul>
                         @foreach (var feature in plan.Features)
@@ -161,11 +162,11 @@
                         }
                     </ul>
                     <a class="ol-button @(plan.Featured ? "ol-button-blue" : "ol-button-dark-outline")" href="/Account/Register?plan=@plan.Name">
-                        @(plan.Name == "Starter" ? "Start free" : $"Choose {plan.Name}") <span>↗</span>
+                        @(plan.Name == "Free" ? "Start free" : $"Choose {plan.Name}") <span>↗</span>
                     </a>
-                    @if (annualBilling && price > 0)
+                    @if (plan.Price > 0)
                     {
-                        <small>Billed annually. Cancel anytime.</small>
+                        <small>Billed annually.</small>
                     }
                 </article>
             }
@@ -173,7 +174,7 @@
 
         <div class="landing-final-cta landing-wrap">
             <div><p class="landing-blue-label">Ready for the next assignment?</p><h2>Run your season<br />like it matters.</h2></div>
-            <div><p>Build a clean record from game one. No card required for the Starter plan.</p><a class="ol-button ol-button-blue" href="/Account/Register">Create your ledger <span>↗</span></a></div>
+            <div><p>Build a clean record from game one. No card required for the Free plan.</p><a class="ol-button ol-button-blue" href="/Account/Register">Create your ledger <span>↗</span></a></div>
         </div>
     </section>
 
@@ -185,7 +186,6 @@
 </div>
 
 @code {
-    private bool annualBilling = true;
     private string activeAudience = "official";
     private readonly int[] chartHeights = [34, 48, 40, 58, 45, 62, 70, 54, 67, 76, 64, 82];
 
@@ -198,9 +198,10 @@
 
     private readonly Plan[] plans =
     [
-        new("Starter", "For a first season without the spreadsheet.", 0, 0, false, ["Unlimited game entries", "Mileage and expense log", "Season totals", "CSV export"]),
-        new("Pro", "For active multi-sport officials.", 9, 7, true, ["Everything in Starter", "Payment reminders", "Tax-ready reports", "Calendar sync", "Priority support"]),
-        new("Crew", "For small associations and assigning crews.", 24, 19, false, ["Everything in Pro", "Up to 15 members", "Shared game imports", "Association dashboard", "Custom branding"])
+        new("Free", "Track up to 10 games per year.", 0, false,
+            ["Earnings tracking", "Mileage tracking", "Payment status", "Basic reporting"]),
+        new("Pro", "Unlimited games and expenses.", 39, true,
+            ["Unlimited games and expenses", "Payment tracking", "Receipts", "Advanced reports", "Tax Center", "Exports", "Assignment imports"])
     ];
 
     private AudienceContent Audience => activeAudience switch
@@ -225,5 +226,5 @@
     private sealed record PreviewGame(string Month, string Day, string Level, string Sport, string Location, string Fee, bool Pending);
     private sealed record AudienceItem(string Title, string Copy);
     private sealed record AudienceContent(string Label, string Title, string Copy, AudienceItem[] Items);
-    private sealed record Plan(string Name, string Description, int MonthlyPrice, int AnnualPrice, bool Featured, string[] Features);
+    private sealed record Plan(string Name, string Description, int Price, bool Featured, string[] Features);
 }
