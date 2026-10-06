@@ -6,9 +6,10 @@ public static class SeasonImages
     {
         ("baseball", "Baseball"), ("football", "Football"), ("soccer", "Soccer"),
         ("basketball", "Basketball"), ("softball", "Softball"), ("volleyball", "Volleyball"),
-        ("tennis", "Tennis"), ("golf", "Golf"), ("hockey", "Hockey"), ("other", "Other")
+        ("tennis", "Tennis"), ("golf", "Golf"), ("hockey", "Hockey"), ("other", "Other"),
+        ("none", "No image")
     };
 
     public static string Path(string key) =>
-        $"/images/sports/{(Options.Any(x => x.Key == key) ? key : "other")}.svg";
+        $"/images/sports/{(Options.Any(x => x.Key == key) ? key : "other")}.svg?v=3";
 }
