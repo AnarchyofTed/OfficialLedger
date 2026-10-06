@@ -11,5 +11,5 @@ public static class SeasonImages
     };
 
     public static string Path(string key) =>
-        $"/images/sports/{(Options.Any(x => x.Key == key) ? key : "other")}.svg";
+        $"/images/sports/{(Options.Any(x => x.Key == key) ? key : "other")}.svg?v=2";
 }
