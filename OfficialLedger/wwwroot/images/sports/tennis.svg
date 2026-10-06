@@ -1,9 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs><clipPath id="tennis-ball"><circle cx="32" cy="32" r="26"/></clipPath></defs>
-  <circle cx="32" cy="32" r="26" fill="#c3de57"/>
-  <g clip-path="url(#tennis-ball)" fill="none" stroke="#fffaf0" stroke-width="3" stroke-linecap="round">
-    <path d="M9 7 C34 16 34 48 9 57"/>
-    <path d="M55 7 C30 16 30 48 55 57"/>
+  <circle cx="32" cy="32" r="26" fill="#bdd16c"/>
+  <g clip-path="url(#tennis-ball)" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="rotate(24 32 32)" stroke="#fffaf0" stroke-width="3">
+      <path d="M9 7 C34 16 34 48 9 57 M55 7 C30 16 30 48 55 57"/>
+    </g>
   </g>
   <circle cx="32" cy="32" r="26" fill="none" stroke="#173c40" stroke-width="2"/>
 </svg>
