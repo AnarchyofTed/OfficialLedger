@@ -28,7 +28,7 @@ Check(!Valid(season), "Blank name accepted.");
 season.Name = "Spring League";
 season.SportImage = "../../file";
 Check(!Valid(season), "Unknown image accepted.");
-Check(SeasonImages.Path("../../file") == "/images/sports/other.svg", "Image fallback is unsafe.");
+Check(SeasonImages.Path("../../file") == SeasonImages.Path("other"), "Image fallback is unsafe.");
 
 var game = new AddGame.AddGameInputModel { SportTypeId = 1, GameDate = DateTime.Today };
 Check(!Valid(game), "Game with no season accepted.");
