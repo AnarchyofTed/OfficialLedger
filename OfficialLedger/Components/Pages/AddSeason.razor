@@ -1,4 +1,5 @@
 @page "/add-season"
+@page "/edit-season/{SeasonId:int}"
 @attribute [Authorize]
 @rendermode InteractiveServer
 
@@ -14,71 +15,121 @@
 @inject NavigationManager NavigationManager
 @inject ILogger<AddSeason> Logger
 
-<PageTitle>Add Season</PageTitle>
+<PageTitle>@(IsEditing ? "Edit Season" : "Add Season")</PageTitle>
 <div class="page-content">
     <div class="add-game-page">
         <div class="page-header">
-            <div><p class="page-kicker">Your next season</p><h1 class="page-title">Add Season</h1>
+            <div><p class="page-kicker">@(IsEditing ? "Season settings" : "Your next season")</p><h1 class="page-title">@(IsEditing ? "Edit Season" : "Add Season")</h1>
                 <p class="page-subtitle">Choose a name, date range, and sport image for your season.</p></div>
         </div>
-        <div class="form-card">
-            <EditForm Model="Input" OnValidSubmit="SaveSeason" FormName="addSeasonForm">
-                <DataAnnotationsValidator />
-                <ValidationSummary class="validation-summary" />
-                @if (error is not null)
-                {
-                    <div class="validation-summary" role="alert">@error</div>
-                }
-                <div class="form-grid">
-                    <div class="form-field form-field-full">
-                        <label for="seasonName">Season name</label>
-                        <InputText id="seasonName" @bind-Value="Input.Name" class="form-input" placeholder="2027 Baseball Season" maxlength="100" />
+        @if (loading)
+        {
+            <p role="status">Loading season…</p>
+        }
+        else if (unavailable)
+        {
+            <p role="alert">This season is unavailable or cannot be edited.</p>
+            <button type="button" class="secondary-btn" @onclick="Cancel">Back to dashboard</button>
+        }
+        else
+        {
+            <div class="form-card">
+                <EditForm Model="Input" OnValidSubmit="SaveSeason" FormName="addSeasonForm">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="validation-summary" />
+                    @if (error is not null)
+                    {
+                        <div class="validation-summary" role="alert">@error</div>
+                    }
+                    <div class="form-grid">
+                        <div class="form-field form-field-full">
+                            <label for="seasonName">Season name</label>
+                            <InputText id="seasonName" @bind-Value="Input.Name" class="form-input" placeholder="2027 Baseball Season" maxlength="100" />
+                        </div>
+                        <div class="form-field">
+                            <label for="startDate">Start date</label>
+                            <InputDate id="startDate" @bind-Value="Input.StartDate" class="form-input" />
+                        </div>
+                        <div class="form-field">
+                            <label for="endDate">End date</label>
+                            <InputDate id="endDate" @bind-Value="Input.EndDate" class="form-input" />
+                        </div>
+                        <fieldset class="form-field form-field-full season-image-fieldset">
+                            <legend>Sport image</legend>
+                            <InputRadioGroup @bind-Value="Input.SportImage">
+                                <div class="season-image-grid">
+                                @foreach (var sport in SeasonImages.Options)
+                                {
+                                    <label class="season-image-choice @(Input.SportImage == sport.Key ? "selected" : "")">
+                                        <InputRadio Value="@sport.Key" />
+                                        <img src="@SeasonImages.Path(sport.Key)" alt="" />
+                                        <span>@sport.Label</span>
+                                    </label>
+                                }
+                                </div>
+                            </InputRadioGroup>
+                        </fieldset>
                     </div>
-                    <div class="form-field">
-                        <label for="startDate">Start date</label>
-                        <InputDate id="startDate" @bind-Value="Input.StartDate" class="form-input" />
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn" disabled="@saving">@(saving ? "Saving…" : IsEditing ? "Save Changes" : "Create Season")</button>
+                        <button type="button" class="secondary-btn" disabled="@saving" @onclick="Cancel">Cancel</button>
                     </div>
-                    <div class="form-field">
-                        <label for="endDate">End date</label>
-                        <InputDate id="endDate" @bind-Value="Input.EndDate" class="form-input" />
-                    </div>
-                    <fieldset class="form-field form-field-full season-image-fieldset">
-                        <legend>Sport image</legend>
-                        <InputRadioGroup @bind-Value="Input.SportImage">
-                            <div class="season-image-grid">
-                            @foreach (var sport in SeasonImages.Options)
-                            {
-                                <label class="season-image-choice @(Input.SportImage == sport.Key ? "selected" : "")">
-                                    <InputRadio Value="@sport.Key" />
-                                    <img src="@SeasonImages.Path(sport.Key)" alt="" />
-                                    <span>@sport.Label</span>
-                                </label>
-                            }
-                            </div>
-                        </InputRadioGroup>
-                    </fieldset>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="primary-btn" disabled="@saving">@(saving ? "Saving…" : "Create Season")</button>
-                    <button type="button" class="secondary-btn" disabled="@saving" @onclick="Cancel">Cancel</button>
-                </div>
-            </EditForm>
-        </div>
+                </EditForm>
+            </div>
+        }
     </div>
 </div>
 
 @code {
     [SupplyParameterFromQuery] public string? ReturnTo { get; set; }
     private SeasonInputModel Input { get; set; } = new();
+    [Parameter] public int? SeasonId { get; set; }
+    private bool IsEditing => SeasonId.HasValue;
+    private bool loading;
+    private bool unavailable;
     private bool saving;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        unavailable = false;
+        error = null;
+        Input = new();
+        try
+        {
+            if (!IsEditing) return;
+            var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = auth.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                unavailable = true;
+                return;
+            }
+            var season = await Db.Seasons.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == SeasonId && x.UserId == userId);
+            if (season is null)
+            {
+                unavailable = true;
+                return;
+            }
+            Input = new SeasonInputModel
+            {
+                Name = season.Name, StartDate = season.StartDate,
+                EndDate = season.EndDate, SportImage = season.SportImage
+            };
+        }
+        finally { loading = false; }
+    }
+
     private string? error;
 
     private async Task SaveSeason()
     {
-        if (saving) return;
+        if (saving || loading || unavailable) return;
         saving = true;
         error = null;
         Season? season = null;
+        Microsoft.EntityFrameworkCore.ChangeTracking.PropertyValues? originalValues = null;
         try
         {
             var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -88,29 +139,47 @@
                 NavigationManager.NavigateTo("/Account/Login");
                 return;
             }
-            season = new Season
+            if (IsEditing)
             {
-                UserId = userId,
-                Name = Input.Name.Trim(),
-                StartDate = Input.StartDate!.Value.Date,
-                EndDate = Input.EndDate!.Value.Date,
-                SportImage = Input.SportImage
-            };
-            Db.Seasons.Add(season);
+                season = await Db.Seasons.SingleOrDefaultAsync(x => x.Id == SeasonId && x.UserId == userId);
+                if (season is null)
+                {
+                    unavailable = true;
+                    return;
+                }
+                originalValues = Db.Entry(season).CurrentValues.Clone();
+            }
+            else
+            {
+                season = new Season { UserId = userId };
+                Db.Seasons.Add(season);
+            }
+            season.Name = Input.Name.Trim();
+            season.StartDate = Input.StartDate!.Value.Date;
+            season.EndDate = Input.EndDate!.Value.Date;
+            season.SportImage = Input.SportImage;
             await Db.SaveChangesAsync();
             NavigationManager.NavigateTo(ReturnTo == "add-game"
                 ? $"/add-game?seasonId={season.Id}" : $"/dashboard?seasonId={season.Id}");
         }
         catch (DbUpdateException ex)
         {
-            if (season is not null) Db.Entry(season).State = EntityState.Detached;
-            Logger.LogError(ex, "Could not create season.");
+            if (season is not null)
+            {
+                if (originalValues is not null)
+                {
+                    Db.Entry(season).CurrentValues.SetValues(originalValues);
+                    Db.Entry(season).State = EntityState.Unchanged;
+                }
+                else Db.Entry(season).State = EntityState.Detached;
+            }
+            Logger.LogError(ex, "Could not save season.");
             error = "The season could not be saved. Please try again.";
         }
         finally { saving = false; }
     }
 
-    private void Cancel() => NavigationManager.NavigateTo(ReturnTo == "add-game" ? "/add-game" : "/dashboard");
+    private void Cancel() => NavigationManager.NavigateTo(IsEditing ? $"/dashboard?seasonId={SeasonId}" : ReturnTo == "add-game" ? "/add-game" : "/dashboard");
 
     public class SeasonInputModel : IValidatableObject
     {
