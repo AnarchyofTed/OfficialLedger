@@ -46,6 +46,10 @@
                                 <button type="button" class="season-option" @onclick="() => SelectSeason(season)"><img class="season-sport-image" src="@SeasonImages.Path(season.SportImage)" alt="" /> @season.Name</button>
                             }
                         }
+                    @if (selectedSeason is not null && selectedSeason.UserId == userId && !string.IsNullOrWhiteSpace(userId))
+                    {
+                        <button type="button" class="season-option" @onclick="GoToEditSeason">Edit Season</button>
+                    }
                     <button type="button" class="season-option season-option-add" @onclick="GoToAddSeason">+ Add Season</button>
                     </div>
                 }
@@ -336,6 +340,12 @@
 
         await Db.SaveChangesAsync();
         await LoadTotalEarningsAsync();
+    }
+
+    private void GoToEditSeason()
+    {
+        if (selectedSeason is not null && selectedSeason.UserId == userId && !string.IsNullOrWhiteSpace(userId))
+            NavigationManager.NavigateTo($"/edit-season/{selectedSeason.Id}");
     }
 
     private void GoToAddSeason() => NavigationManager.NavigateTo("/add-season");
