@@ -147,11 +147,15 @@
                     }
                     <div class="pricing-card-top">
                         <div><h3>@plan.Name</h3><p>@plan.Description</p></div>
-                        <div class="pricing-price">
-                            <strong>$@plan.Price</strong>
+                        <div class="pricing-price @(plan.Price > 0 ? "pricing-price-beta" : string.Empty)">
                             @if (plan.Price > 0)
                             {
-                                <span>/ year</span>
+                                <div class="pricing-original-price"><del>$@plan.Price</del><span>/ year</span></div>
+                                <strong class="pricing-beta-label">Free during Beta</strong>
+                            }
+                            else
+                            {
+                                <strong>$@plan.Price</strong>
                             }
                         </div>
                     </div>
@@ -164,10 +168,7 @@
                     <a class="ol-button @(plan.Featured ? "ol-button-blue" : "ol-button-dark-outline")" href="/Account/Register?plan=@plan.Name">
                         @(plan.Name == "Free" ? "Start free" : $"Choose {plan.Name}") <span>↗</span>
                     </a>
-                    @if (plan.Price > 0)
-                    {
-                        <small>Billed annually.</small>
-                    }
+                    <small>@(plan.Price > 0 ? "No charge during beta." : "Free plan. No subscription required.")</small>
                 </article>
             }
         </div>
