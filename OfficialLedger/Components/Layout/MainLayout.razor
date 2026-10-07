@@ -61,8 +61,15 @@
 </AuthorizeView>
 
 @code {
-    private static string GetDisplayName(ClaimsPrincipal user) =>
-        user.FindFirstValue(ClaimTypes.GivenName) ?? user.Identity?.Name ?? "User";
+    private static string GetDisplayName(ClaimsPrincipal user)
+    {
+        var fullName = string.Join(" ", new[]
+        {
+            user.FindFirstValue(ClaimTypes.GivenName),
+            user.FindFirstValue(ClaimTypes.Surname)
+        }.Where(name => !string.IsNullOrWhiteSpace(name)).Select(name => name!.Trim()));
+        return string.IsNullOrWhiteSpace(fullName) ? user.Identity?.Name ?? "User" : fullName;
+    }
 
     private static string GetInitial(string? value)
     {
