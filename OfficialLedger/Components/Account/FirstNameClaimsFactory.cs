@@ -13,6 +13,8 @@ public class FirstNameClaimsFactory(UserManager<ApplicationUser> userManager, IO
         var identity = await base.GenerateClaimsAsync(user);
         if (!string.IsNullOrWhiteSpace(user.FirstName))
             identity.AddClaim(new Claim(ClaimTypes.GivenName, user.FirstName.Trim()));
+        if (!string.IsNullOrWhiteSpace(user.LastName))
+            identity.AddClaim(new Claim(ClaimTypes.Surname, user.LastName.Trim()));
         return identity;
     }
 }
