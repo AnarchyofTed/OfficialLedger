@@ -34,7 +34,7 @@
                             <a href="/Account/Manage" class="sidebar-user-avatar" aria-label="Manage account">@GetInitial(context.User.Identity?.Name)</a>
                             <div class="sidebar-user-info">
                                 <a href="/Account/Manage" class="sidebar-user-name">@context.User.Identity?.Name</a>
-                                <form method="post" action="/Account/Logout" @formname="logoutForm">
+                                <form method="post" action="/Account/Logout" @formname="logoutForm" data-enhance="false">
                                     <AntiforgeryToken />
                                     <input type="hidden" name="returnUrl" value="/" />
                                     <button type="submit" class="sidebar-logout-btn">Log out</button>
