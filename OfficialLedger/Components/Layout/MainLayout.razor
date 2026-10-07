@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 
 <AuthorizeView>
     <Authorized>
@@ -31,9 +32,9 @@
 
                     <div class="sidebar-bottom">
                         <div class="sidebar-user">
-                            <a href="/Account/Manage" class="sidebar-user-avatar" aria-label="Manage account">@GetInitial(context.User.Identity?.Name)</a>
+                            <a href="/Account/Manage" class="sidebar-user-avatar" aria-label="Manage account">@GetInitial(GetDisplayName(context.User))</a>
                             <div class="sidebar-user-info">
-                                <a href="/Account/Manage" class="sidebar-user-name">@context.User.Identity?.Name</a>
+                                <a href="/Account/Manage" class="sidebar-user-name">@GetDisplayName(context.User)</a>
                                 <form method="post" action="/Account/Logout" @formname="logoutForm">
                                     <AntiforgeryToken />
                                     <input type="hidden" name="returnUrl" value="/" />
@@ -60,6 +61,9 @@
 </AuthorizeView>
 
 @code {
+    private static string GetDisplayName(ClaimsPrincipal user) =>
+        user.FindFirstValue(ClaimTypes.GivenName) ?? user.Identity?.Name ?? "User";
+
     private static string GetInitial(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? "O" : value.Trim()[0].ToString().ToUpperInvariant();

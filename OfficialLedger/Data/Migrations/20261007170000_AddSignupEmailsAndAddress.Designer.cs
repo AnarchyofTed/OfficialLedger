@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OfficialLedger.Data;
 
@@ -11,9 +12,10 @@ using OfficialLedger.Data;
 namespace OfficialLedger.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261007170000_AddSignupEmailsAndAddress")]
+    partial class AddSignupEmailsAndAddress
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -322,7 +324,7 @@ namespace OfficialLedger.Migrations
                     b.HasIndex("LeagueId");
 
                     b.HasIndex("SeasonId");
-                    
+
                     b.HasIndex("SportTypeId");
 
                     b.ToTable("Game");
@@ -479,4 +481,3 @@ namespace OfficialLedger.Migrations
         }
     }
 }
-

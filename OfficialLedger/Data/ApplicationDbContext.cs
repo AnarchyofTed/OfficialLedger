@@ -7,6 +7,7 @@ namespace OfficialLedger.Data;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<ApplicationUser>(options)
 {
+    public DbSet<SignupEmail> SignupEmails => Set<SignupEmail>();
     public DbSet<League> Leagues => Set<League>();
     public DbSet<Game> Games => Set<Game>();
     public DbSet<SportType> SportTypes => Set<SportType>();
@@ -16,6 +17,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.Entity<SignupEmail>().HasIndex(x => x.NormalizedEmail).IsUnique();
 
         builder.Entity<Expense>().ToTable("Expense");
         builder.Entity<Expense>().Property(x => x.ExpenseDate).HasColumnType("date");

@@ -8,6 +8,8 @@ namespace OfficialLedger.Data
         public Guid ApplicationUserID { get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
+        [System.ComponentModel.DataAnnotations.StringLength(500)]
+        public string? Address { get; set; }
         public decimal MileageRate { get; set; } = 0.67m;
 
         public ApplicationUser()

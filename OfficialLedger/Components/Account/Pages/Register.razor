@@ -1,4 +1,4 @@
-﻿@page "/Account/Register"
+@page "/Account/Register"
 
 @using System.ComponentModel.DataAnnotations
 @using System.Text
@@ -6,7 +6,9 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using OfficialLedger.Data
+@using Microsoft.EntityFrameworkCore
 
+@inject ApplicationDbContext Db
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
@@ -20,29 +22,59 @@
 <section class="auth-card">
     <div class="auth-card-heading">
         <p class="page-kicker">@SelectedPlanLabel</p>
-        <h1>Create your ledger.</h1>
-        <p>Your first clean season record is only a minute away.</p>
+        <h1>@(Input.DetailsStep ? "Finish your signup." : "Create your ledger.")</h1>
+        <p>@(Input.DetailsStep ? "Step 2 of 2: tell us a little about yourself." : "Step 1 of 2: start with your email address.")</p>
     </div>
-    <StatusMessage Message="@Message" />
+    <StatusMessage Message="@(signupError ?? Message)" />
     <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" asp-route-plan="@Plan" method="post" OnValidSubmit="RegisterUser" FormName="register" class="auth-form">
         <DataAnnotationsValidator />
         <ValidationSummary class="validation-summary" role="alert" />
-        <div class="auth-field">
-            <label for="register-email">Email address</label>
-            <InputText id="register-email" @bind-Value="Input.Email" class="auth-input" autocomplete="username" aria-required="true" placeholder="you@example.com" />
-            <ValidationMessage For="() => Input.Email" class="field-validation" />
-        </div>
-        <div class="auth-field">
-            <label for="register-password">Password</label>
-            <InputText id="register-password" type="password" @bind-Value="Input.Password" class="auth-input" autocomplete="new-password" aria-required="true" placeholder="At least 6 characters" />
-            <ValidationMessage For="() => Input.Password" class="field-validation" />
-        </div>
-        <div class="auth-field">
-            <label for="register-confirm">Confirm password</label>
-            <InputText id="register-confirm" type="password" @bind-Value="Input.ConfirmPassword" class="auth-input" autocomplete="new-password" aria-required="true" placeholder="Repeat your password" />
-            <ValidationMessage For="() => Input.ConfirmPassword" class="field-validation" />
-        </div>
-        <button type="submit" class="ol-button ol-button-blue auth-submit">Create free account <span>↗</span></button>
+        <input type="hidden" name="Input.DetailsStep" value="@Input.DetailsStep.ToString()" />
+        @if (!Input.DetailsStep)
+        {
+            <div class="auth-field">
+                <label for="register-email">Email address</label>
+                <InputText id="register-email" type="email" @bind-Value="Input.Email" class="auth-input" autocomplete="email" aria-required="true" placeholder="you@example.com" maxlength="256" />
+                <ValidationMessage For="() => Input.Email" class="field-validation" />
+            </div>
+            <button type="submit" class="ol-button ol-button-blue auth-submit">Sign Up <span>↗</span></button>
+        }
+        else
+        {
+            <input type="hidden" name="Input.Email" value="@Input.Email" />
+            <p class="auth-note">Signing up as @Input.Email · <a href="@NavigationManager.Uri" data-enhance-nav="false">Change email</a></p>
+            <div class="auth-field">
+                <label for="register-first-name">First name</label>
+                <InputText id="register-first-name" @bind-Value="Input.FirstName" class="auth-input" autocomplete="given-name" aria-required="true" maxlength="100" />
+                <ValidationMessage For="() => Input.FirstName" class="field-validation" />
+            </div>
+            <div class="auth-field">
+                <label for="register-last-name">Last name</label>
+                <InputText id="register-last-name" @bind-Value="Input.LastName" class="auth-input" autocomplete="family-name" aria-required="true" maxlength="100" />
+                <ValidationMessage For="() => Input.LastName" class="field-validation" />
+            </div>
+            <div class="auth-field">
+                <label for="register-phone">Phone number</label>
+                <InputText id="register-phone" type="tel" @bind-Value="Input.PhoneNumber" class="auth-input" autocomplete="tel" aria-required="true" maxlength="32" />
+                <ValidationMessage For="() => Input.PhoneNumber" class="field-validation" />
+            </div>
+            <div class="auth-field">
+                <label for="register-address">Address</label>
+                <InputTextArea id="register-address" @bind-Value="Input.Address" class="auth-input" autocomplete="street-address" maxlength="500" rows="3" />
+                <ValidationMessage For="() => Input.Address" class="field-validation" />
+            </div>
+            <div class="auth-field">
+                <label for="register-password">Password</label>
+                <InputText id="register-password" type="password" @bind-Value="Input.Password" class="auth-input" autocomplete="new-password" aria-required="true" placeholder="At least 6 characters" maxlength="100" />
+                <ValidationMessage For="() => Input.Password" class="field-validation" />
+            </div>
+            <div class="auth-field">
+                <label for="register-confirm">Confirm password</label>
+                <InputText id="register-confirm" type="password" @bind-Value="Input.ConfirmPassword" class="auth-input" autocomplete="new-password" aria-required="true" maxlength="100" />
+                <ValidationMessage For="() => Input.ConfirmPassword" class="field-validation" />
+            </div>
+            <button type="submit" class="ol-button ol-button-blue auth-submit">Create account <span>↗</span></button>
+        }
         <p class="auth-note">By continuing, you agree to keep the game moving.</p>
         <p class="auth-switch">Already have an account? <a href="/Account/Login">Log in</a></p>
     </EditForm>
@@ -50,6 +82,7 @@
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
+    private string? signupError;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
@@ -66,7 +99,42 @@
 
     public async Task RegisterUser(EditContext editContext)
     {
+        signupError = null;
+        Input.Email = Input.Email.Trim();
+        if (!Input.DetailsStep)
+        {
+            var normalizedEmail = UserManager.NormalizeEmail(Input.Email) ?? Input.Email.ToUpperInvariant();
+            SignupEmail? entry = null;
+            try
+            {
+                if (!await Db.SignupEmails.AnyAsync(x => x.NormalizedEmail == normalizedEmail))
+                {
+                    entry = new SignupEmail { Email = Input.Email, NormalizedEmail = normalizedEmail, CreatedAtUtc = DateTime.UtcNow };
+                    Db.SignupEmails.Add(entry);
+                    await Db.SaveChangesAsync();
+                }
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 })
+            {
+                // Another request has already stored this normalized email.
+                if (entry is not null) Db.Entry(entry).State = EntityState.Detached;
+            }
+            catch (Exception ex) when (ex is DbUpdateException or Microsoft.Data.SqlClient.SqlException)
+            {
+                if (entry is not null) Db.Entry(entry).State = EntityState.Detached;
+                Logger.LogError(ex, "Could not save signup email.");
+                signupError = "Error: We could not save your signup. Please try again.";
+                return;
+            }
+            Input.DetailsStep = true;
+            return;
+        }
+
         var user = CreateUser();
+        user.FirstName = Input.FirstName.Trim();
+        user.LastName = Input.LastName.Trim();
+        user.PhoneNumber = Input.PhoneNumber.Trim();
+        user.Address = string.IsNullOrWhiteSpace(Input.Address) ? null : Input.Address.Trim();
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
@@ -123,22 +191,33 @@
         return (IUserEmailStore<ApplicationUser>)UserStore;
     }
 
-    private sealed class InputModel
+    public sealed class InputModel : IValidatableObject
     {
-        [Required]
-        [EmailAddress]
-        [Display(Name = "Email")]
+        public bool DetailsStep { get; set; }
+
+        [Required, EmailAddress, StringLength(256)]
         public string Email { get; set; } = "";
 
-        [Required]
-        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
-        [DataType(DataType.Password)]
-        [Display(Name = "Password")]
+        [StringLength(100)] public string FirstName { get; set; } = "";
+        [StringLength(100)] public string LastName { get; set; } = "";
+        [StringLength(32)] public string PhoneNumber { get; set; } = "";
+        [StringLength(500)] public string? Address { get; set; }
         public string Password { get; set; } = "";
-
-        [DataType(DataType.Password)]
-        [Display(Name = "Confirm password")]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (!DetailsStep) yield break;
+            if (string.IsNullOrWhiteSpace(FirstName))
+                yield return new ValidationResult("Enter your first name.", new[] { nameof(FirstName) });
+            if (string.IsNullOrWhiteSpace(LastName))
+                yield return new ValidationResult("Enter your last name.", new[] { nameof(LastName) });
+            if (string.IsNullOrWhiteSpace(PhoneNumber) || !new PhoneAttribute().IsValid(PhoneNumber))
+                yield return new ValidationResult("Enter a valid phone number.", new[] { nameof(PhoneNumber) });
+            if (string.IsNullOrWhiteSpace(Password) || Password.Length < 6 || Password.Length > 100)
+                yield return new ValidationResult("Password must be between 6 and 100 characters.", new[] { nameof(Password) });
+            if (string.IsNullOrEmpty(ConfirmPassword) || Password != ConfirmPassword)
+                yield return new ValidationResult("The password and confirmation password do not match.", new[] { nameof(ConfirmPassword) });
+        }
     }
 }
