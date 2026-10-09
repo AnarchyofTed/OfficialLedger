@@ -218,5 +218,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .beta-payment-fields { min-width:0; display:grid; gap:15px; padding:17px; border:1px solid #c7bba9; border-radius:10px; }
 .beta-payment-fields legend { padding:0 6px; font-weight:800; font-size:13px; }
 .beta-payment-fields .auth-input:disabled { opacity:.58; cursor:not-allowed; background:#e9e2d9; }
+
+.tax-fields { margin: 20px 0; padding: 18px; border: 1px solid var(--ol-line-dark); border-radius: 10px; }
+.tax-fields summary { cursor: pointer; font-size: 14px; font-weight: 800; min-height: 28px; }
+.tax-fields summary span { display: block; margin: 5px 0 10px; color: var(--ol-muted); font-size: 12px; font-weight: 400; }
+.tax-fields .form-grid { margin-top: 18px; }
+.tax-fields p, .tax-fields small { color: var(--ol-muted); font-size: 12px; line-height: 1.6; }
+.tax-fields p { margin: 16px 0 0; }
+@media (max-width: 840px) { .sidebar-nav { grid-template-columns: repeat(6, 1fr); } }
 .beta-payment-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .auth-submit:disabled { cursor:not-allowed; opacity:.6; }

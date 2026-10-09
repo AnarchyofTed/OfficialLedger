@@ -62,6 +62,7 @@
                     <div class="form-field form-field-full"><label for="expenseNotes">Notes</label>
                         <InputTextArea readonly="@(!editing || busy)" id="expenseNotes" @bind-Value="Input.Notes" class="form-input form-textarea" maxlength="2000" /></div>
                 </div>
+                    <ExpenseTaxFields Model="Input" ReadOnly="@(!editing || busy)" />
                     <ReceiptAttachments @key="Input" Existing="receipts" Pending="pendingReceipts" Removed="removedReceipts" ReadOnly="@(!editing)" Disabled="busy" UploadingChanged="value => receiptLoading = value" />
 
                     <div class="form-actions">
@@ -124,6 +125,7 @@
             Input = new()
             {
                 ExpenseDate = record.ExpenseDate, Category = record.Category, Amount = record.Amount,
+                PaidDate = record.PaidDate, BusinessUsePercent = record.BusinessUsePercent, ReimbursedAmount = record.ReimbursedAmount,
                 Vendor = record.Vendor, BusinessPurpose = record.BusinessPurpose, Notes = record.Notes
             };
             original = Copy(Input);
@@ -145,6 +147,7 @@
     private static ExpenseInputModel Copy(ExpenseInputModel input) => new()
     {
         ExpenseDate = input.ExpenseDate, Category = input.Category, Amount = input.Amount,
+        PaidDate = input.PaidDate, BusinessUsePercent = input.BusinessUsePercent, ReimbursedAmount = input.ReimbursedAmount,
         Vendor = input.Vendor, BusinessPurpose = input.BusinessPurpose, Notes = input.Notes
     };
 
@@ -177,6 +180,9 @@
                 Db.ExpenseReceipts.Add(receipt);
             }
             record.ExpenseDate = Input.ExpenseDate!.Value.Date;
+            record.PaidDate = Input.PaidDate?.Date;
+            record.BusinessUsePercent = Input.BusinessUsePercent;
+            record.ReimbursedAmount = Input.ReimbursedAmount;
             record.Category = Input.Category;
             record.Amount = Input.Amount!.Value;
             record.Vendor = Input.Vendor?.Trim();

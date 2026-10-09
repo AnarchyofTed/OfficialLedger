@@ -132,6 +132,7 @@
                     </div>
                 </div>
 
+                <GameTaxFields Model="Input" ReadOnly="@(!isEditMode)" />
                 <div class="form-actions">
                     @if (!isEditMode)
                     {
@@ -251,6 +252,7 @@
         dbGame.MilesDriven = Input.MilesDriven ?? 0m;
         dbGame.IsPaid = Input.IsPaid;
         dbGame.Notes = Input.Notes;
+        Input.ApplyTaxFields(dbGame);
 
         await Db.SaveChangesAsync();
 
@@ -289,6 +291,9 @@
             FeeAmount = game.FeeAmount,
             MilesDriven = game.MilesDriven,
             IsPaid = game.IsPaid,
+            PaidDate = game.PaidDate, PayerName = game.PayerName, IncomeKind = game.IncomeKind,
+            TravelReimbursement = game.TravelReimbursement, TravelDate = game.TravelDate,
+            TravelOrigin = game.TravelOrigin, TravelPurpose = game.TravelPurpose, MileageKind = game.MileageKind,
             Notes = game.Notes
         };
     }
@@ -304,11 +309,14 @@
             FeeAmount = input.FeeAmount,
             MilesDriven = input.MilesDriven,
             IsPaid = input.IsPaid,
+            PaidDate = input.PaidDate, PayerName = input.PayerName, IncomeKind = input.IncomeKind,
+            TravelReimbursement = input.TravelReimbursement, TravelDate = input.TravelDate,
+            TravelOrigin = input.TravelOrigin, TravelPurpose = input.TravelPurpose, MileageKind = input.MileageKind,
             Notes = input.Notes
         };
     }
 
-    public class EditGameInputModel
+    public class EditGameInputModel : GameTaxInputModel
     {
         [Required(ErrorMessage = "Season is required.")]
         public int? SeasonId { get; set; }
@@ -326,8 +334,6 @@
 
         [Range(0, 1000, ErrorMessage = "Miles driven must be 0 or greater.")]
         public decimal? MilesDriven { get; set; } = 0m;
-
-        public bool IsPaid { get; set; }
 
         public string? Notes { get; set; }
     }

@@ -7,6 +7,9 @@ public class Expense
     public int Id { get; set; }
     [Required, MaxLength(450)] public string UserId { get; set; } = string.Empty;
     public DateTime ExpenseDate { get; set; }
+    public DateTime? PaidDate { get; set; }
+    public decimal? BusinessUsePercent { get; set; }
+    public decimal ReimbursedAmount { get; set; }
     [Required, MaxLength(32)] public string Category { get; set; } = "Other";
     public decimal Amount { get; set; }
     [MaxLength(200)] public string? Vendor { get; set; }

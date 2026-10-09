@@ -14,6 +14,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<ExpenseReceipt> ExpenseReceipts => Set<ExpenseReceipt>();
+    public DbSet<TaxYearProfile> TaxYearProfiles => Set<TaxYearProfile>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -23,12 +24,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<Expense>().ToTable("Expense");
         builder.Entity<Expense>().Property(x => x.ExpenseDate).HasColumnType("date");
         builder.Entity<Expense>().Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Entity<Expense>().Property(x => x.PaidDate).HasColumnType("date");
+        builder.Entity<Expense>().Property(x => x.BusinessUsePercent).HasPrecision(5, 2);
+        builder.Entity<Expense>().Property(x => x.ReimbursedAmount).HasPrecision(18, 2);
+        builder.Entity<Expense>().HasIndex(x => new { x.UserId, x.PaidDate });
+        builder.Entity<TaxYearProfile>().ToTable("TaxYearProfile");
+        builder.Entity<TaxYearProfile>().HasIndex(x => new { x.UserId, x.TaxYear }).IsUnique();
         builder.Entity<Expense>().HasIndex(x => new { x.UserId, x.ExpenseDate });
         builder.Entity<ExpenseReceipt>().ToTable("ExpenseReceipt");
         builder.Entity<ExpenseReceipt>().HasOne(x => x.Expense).WithMany(x => x.Receipts)
             .HasForeignKey(x => x.ExpenseId).OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<Game>().ToTable("Game");
+        builder.Entity<Game>().Property(x => x.PaidDate).HasColumnType("date");
+        builder.Entity<Game>().Property(x => x.TravelDate).HasColumnType("date");
+        builder.Entity<Game>().Property(x => x.TravelReimbursement).HasPrecision(18, 2);
+        builder.Entity<Game>().Property(x => x.IncomeKind).HasDefaultValue("Review");
+        builder.Entity<Game>().Property(x => x.MileageKind).HasDefaultValue("Review");
         builder.Entity<League>().ToTable("League");
         builder.Entity<SportType>().ToTable("SportType");
         builder.Entity<Season>().ToTable("Season");
