@@ -12,4 +12,6 @@ public class Expense
     [MaxLength(200)] public string? Vendor { get; set; }
     [MaxLength(500)] public string? BusinessPurpose { get; set; }
     [MaxLength(2000)] public string? Notes { get; set; }
+    public List<ExpenseReceipt> Receipts { get; set; } = [];
 }
+

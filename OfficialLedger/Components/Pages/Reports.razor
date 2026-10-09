@@ -111,6 +111,21 @@
                 </table>
             }
             <p class="report-expense-note">Year reports use expense dates. Season reports include expenses dated within the season's start and end dates.</p>
+            <details class="report-receipts">
+                <summary>Saved receipts (@reportExpenses.Sum(x => receiptCounts.GetValueOrDefault(x.Id)))</summary>
+                @foreach (var expense in reportExpenses.Where(x => receiptCounts.GetValueOrDefault(x.Id) > 0).OrderBy(x => x.ExpenseDate))
+                {
+                    <a class="report-receipt-link" href="@($"/expenses/details/{expense.Id}")">
+                        <span>@expense.ExpenseDate.ToString("MMM d, yyyy") · @expense.Category · @expense.Vendor</span>
+                        <strong>@expense.Amount.ToString("C2")</strong>
+                        <small>@receiptCounts.GetValueOrDefault(expense.Id) receipt(s) · View expense</small>
+                    </a>
+                }
+                @if (!reportExpenses.Any(x => receiptCounts.GetValueOrDefault(x.Id) > 0))
+                {
+                    <p class="report-expense-note">No receipts attached in this selection. Add them from an expense's edit page.</p>
+                }
+            </details>
         </section>
 
         <section class="report-note">
@@ -125,6 +140,7 @@
     private string selectedFilter = "all";
     private List<Game> allGames = [];
     private List<Expense> allExpenses = [];
+    private Dictionary<int, int> receiptCounts = [];
     private List<Expense> reportExpenses = [];
     private List<ExpenseSummary> expenseSummaries = [];
     private decimal totalExpenses;
@@ -159,8 +175,12 @@
 
         allExpenses = await Db.Expenses.AsNoTracking()
             .Where(x => x.UserId == user.Id).ToListAsync();
+        receiptCounts = await Db.ExpenseReceipts.AsNoTracking().Where(x => x.Expense.UserId == user.Id)
+            .GroupBy(x => x.ExpenseId).Select(x => new { Id = x.Key, Count = x.Count() })
+            .ToDictionaryAsync(x => x.Id, x => x.Count);
 
-        years = allGames.Select(x => x.GameDate.Year).Distinct().OrderByDescending(x => x).ToList();
+        years = allGames.Select(x => x.GameDate.Year).Concat(allExpenses.Select(x => x.ExpenseDate.Year))
+            .Distinct().OrderByDescending(x => x).ToList();
         seasons = await Db.Seasons
             .Where(x => x.UserId == user.Id || x.UserId == null)
             .OrderByDescending(x => x.StartDate)
@@ -213,3 +233,4 @@
         public int Percentage { get; set; }
     }
 }
+

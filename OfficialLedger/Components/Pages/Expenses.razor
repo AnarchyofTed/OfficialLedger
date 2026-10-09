@@ -8,7 +8,7 @@
 @using Microsoft.EntityFrameworkCore
 @using OfficialLedger.Data
 @using OfficialLedger.Models
-@inject ApplicationDbContext Db
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 @inject ILogger<Expenses> Logger
@@ -18,7 +18,7 @@
     <header class="page-header">
         <div><p class="page-kicker">Keep your records together</p><h1 class="page-title">Expenses</h1>
             <p class="page-subtitle">Record meals, camps, equipment, clothing, and other officiating expenses.</p></div>
-        <button type="button" class="primary-btn" disabled="@busy" @onclick="StartAdd">Add Expense <span>+</span></button>
+        <button type="button" class="primary-btn" disabled="@(busy || receiptLoading)" @onclick="StartAdd">Add Expense <span>+</span></button>
     </header>
 
     @if (error is not null)
@@ -53,9 +53,10 @@
                     <div class="form-field form-field-full"><label for="expenseNotes">Notes</label>
                         <InputTextArea id="expenseNotes" @bind-Value="Input.Notes" class="form-input form-textarea" maxlength="2000" /></div>
                 </div>
+                <ReceiptAttachments @key="Input" Pending="pendingReceipts" Disabled="busy" UploadingChanged="value => receiptLoading = value" />
                 <div class="form-actions">
-                    <button type="submit" class="primary-btn" disabled="@busy">@(busy ? "Saving…" : "Save Expense")</button>
-                    <button type="button" class="secondary-btn" disabled="@busy" @onclick="Cancel">Cancel</button>
+                    <button type="submit" class="primary-btn" disabled="@(busy || receiptLoading)">@(busy ? "Saving…" : receiptLoading ? "Reading receipt…" : "Save Expense")</button>
+                    <button type="button" class="secondary-btn" disabled="@(busy || receiptLoading)" @onclick="Cancel">Cancel</button>
                 </div>
             </EditForm>
         </section>
@@ -88,7 +89,7 @@
         {
             <div class="games-table-card expense-table-wrap">
                 <table class="expense-table">
-                    <thead><tr><th>Date</th><th>Category</th><th>Details</th><th>Amount</th><th>Notes</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Category</th><th>Details</th><th>Amount</th><th>Notes</th><th>Receipts</th></tr></thead>
                     <tbody>
                         @foreach (var expense in VisibleExpenses)
                         {
@@ -98,6 +99,7 @@
                                 <td class="expense-details"><strong>@expense.Vendor</strong><span>@expense.BusinessPurpose</span></td>
                                 <td class="expense-amount">@expense.Amount.ToString("C2")</td>
                                 <td class="expense-notes">@expense.Notes</td>
+                                <td>@(receiptCounts.GetValueOrDefault(expense.Id) is var count && count > 0 ? $"{count} attached" : "—")</td>
                             </tr>
                         }
                     </tbody>
@@ -110,6 +112,9 @@
 
 @code {
     private List<Expense> expenses = [];
+    private Dictionary<int, int> receiptCounts = [];
+    private List<ReceiptUpload> pendingReceipts = [];
+    private bool receiptLoading;
     private ExpenseInputModel Input { get; set; } = new();
     private bool loading = true;
     private bool busy;
@@ -139,26 +144,30 @@
 
     private async Task Reload()
     {
+        await using var Db = await DbFactory.CreateDbContextAsync();
         expenses = await Db.Expenses.AsNoTracking().Where(x => x.UserId == userId)
             .OrderByDescending(x => x.ExpenseDate).ThenByDescending(x => x.Id).ToListAsync();
+        receiptCounts = await Db.ExpenseReceipts.AsNoTracking().Where(x => x.Expense.UserId == userId)
+            .GroupBy(x => x.ExpenseId).Select(x => new { Id = x.Key, Count = x.Count() })
+            .ToDictionaryAsync(x => x.Id, x => x.Count);
     }
 
     private void StartAdd()
     {
         Input = new();
+        pendingReceipts = [];
         error = null;
         showForm = true;
     }
 
     private void OpenExpense(int id) => NavigationManager.NavigateTo($"/expenses/details/{id}");
-    private void Cancel() { showForm = false; error = null; }
+    private void Cancel() { showForm = false; error = null; pendingReceipts = []; }
 
     private async Task SaveExpense()
     {
-        if (busy) return;
+        if (busy || receiptLoading) return;
         busy = true;
         error = null;
-        Expense? record = null;
         try
         {
             var currentUser = await CurrentUserId();
@@ -167,7 +176,9 @@
                 NavigationManager.NavigateTo("/Account/Login");
                 return;
             }
-            record = new Expense { UserId = currentUser };
+            ReceiptFiles.ValidateCount(0, pendingReceipts.Count);
+            await using var Db = await DbFactory.CreateDbContextAsync();
+            var record = new Expense { UserId = currentUser, Receipts = pendingReceipts.Select(ReceiptFiles.CreateReceipt).ToList() };
             Db.Expenses.Add(record);
             record.ExpenseDate = Input.ExpenseDate!.Value.Date;
             record.Category = Input.Category;
@@ -179,6 +190,7 @@
             await Reload();
             Cancel();
         }
+        catch (InvalidDataException ex) { error = ex.Message; }
         catch (DbUpdateException ex)
         {
             Logger.LogError(ex, "Could not save expense.");
@@ -186,9 +198,9 @@
         }
         finally
         {
-            if (record is not null) Db.Entry(record).State = EntityState.Detached;
             busy = false;
         }
     }
 
 }
+
