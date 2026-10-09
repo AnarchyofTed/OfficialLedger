@@ -1,6 +1,9 @@
 @page "/"
 @layout OfficialLedger.Components.Layout.LandingLayout
 @rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
 
 <PageTitle>Blue Ledger | Every game. Every dollar. One clear record.</PageTitle>
 
@@ -187,6 +190,17 @@
 </div>
 
 @code {
+    protected override async Task OnInitializedAsync()
+    {
+        // A valid Identity authentication cookie means the user has an active session.
+        // After explicit logout the cookie is cleared, so the public landing page remains visible.
+        var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authenticationState.User.Identity?.IsAuthenticated == true)
+        {
+            NavigationManager.NavigateTo("/dashboard");
+        }
+    }
+
     private string activeAudience = "official";
     private readonly int[] chartHeights = [34, 48, 40, 58, 45, 62, 70, 54, 67, 76, 64, 82];
 
