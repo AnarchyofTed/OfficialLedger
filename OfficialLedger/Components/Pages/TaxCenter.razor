@@ -1,0 +1,222 @@
+@page "/tax-center"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using OfficialLedger.Data
+@using OfficialLedger.Models
+@using OfficialLedger.Tax
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject TaxReportReader Reader
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+@inject ILogger<TaxCenter> Logger
+
+<PageTitle>Tax Center | BlueLedger</PageTitle>
+<div class="page-content tax-page" aria-busy="@(loading || saving)">
+    <header class="page-header tax-header">
+        <div><p class="page-kicker">Your annual handoff</p><h1 class="page-title">Tax Center</h1>
+            <p class="page-subtitle">Prepare your officiating records for your CPA or tax professional.</p></div>
+        <label class="tax-year-label" for="taxYear">Calendar year
+            <select id="taxYear" class="form-input" @bind="selectedYear" @bind:after="ChangeYear" disabled="@(loading || saving)">
+                @foreach (var year in years) { <option value="@year">@year</option> }
+            </select>
+        </label>
+    </header>
+
+    @if (error is not null) { <div class="validation-summary" role="alert">@error <button class="secondary-btn" @onclick="Reload" disabled="@(loading || saving)">Try again</button></div> }
+    @if (loading) { <div class="loading-card">Organizing your annual records...</div> }
+    else if (report is not null)
+    {
+        <section class="tax-handoff">
+            <div><span class="tax-tag">@report.Year PREPARER PACKET</span><h2>One year. One organized handoff.</h2>
+                <p>A printable worksheet, detailed spreadsheets, and the receipts behind your expenses.</p>
+                <small>January 1 – December 31, @report.Year · @report.OwnerName</small></div>
+            <div class="tax-export-actions">
+                <a class="primary-btn" href="@($"/tax-center/{report.Year}/worksheet")" target="_blank" rel="noopener" data-enhance-nav="false">Open CPA worksheet <span aria-hidden="true">↗</span></a>
+                <a class="secondary-btn" href="PacketUrl" data-enhance-nav="false">Download CPA packet <span aria-hidden="true">↓</span></a>
+                <label class="tax-receipt-toggle"><input type="checkbox" @bind="includeReceipts" /> Include original receipts (@report.Receipts.Count)</label>
+                <small>Print or save the worksheet as PDF. The packet is a ZIP with the worksheet and CSV files.</small>
+            </div>
+        </section>
+
+        <section class="tax-metrics" aria-label="Annual recorded totals">
+            <article><span>Payments received</span><strong>@Money(report.TotalReceived)</strong><small>@report.ReceivedGames.Count dated payments · includes travel allowances</small></article>
+            <article><span>Expenses paid</span><strong>@Money(report.PaidExpenseTotal)</strong><small>@report.PaidExpenses.Count dated expenses · before tax review</small></article>
+            <article><span>Miles logged</span><strong>@report.TotalMiles.ToString("N2", Us)</strong><small>@report.MileageGames.Count trip records · eligibility requires review</small></article>
+            <article class="tax-review-metric"><span>Review reminders</span><strong>@report.ReviewItems.Count</strong><small>Missing information and items for your preparer</small></article>
+        </section>
+
+        @if (!report.HasRecords)
+        {
+            <div class="tax-card tax-empty"><h2>No records for this year yet.</h2><p>Add games and expenses, or choose another calendar year.</p><a class="secondary-btn" href="/add-game">Add a game</a> <a class="secondary-btn" href="/expenses">Add an expense</a></div>
+        }
+
+        <section class="tax-card tax-review-card">
+            <div class="tax-section-header"><div><p class="page-kicker">Check before sharing</p><h2>Review your records</h2></div><span class="tax-badge">@report.ReviewItems.Count reminders</span></div>
+            <p>Unknown payment years appear here across all recorded years so your preparer can determine where they belong.</p>
+            @if (report.UndatedPaidGames.Count > 0 || report.UndatedExpenses.Count > 0)
+            {
+                <div class="tax-unassigned">
+                    <div><b>@Money(report.UndatedIncomeTotal)</b><span>@report.UndatedPaidGames.Count paid games without a receipt date</span></div>
+                    <div><b>@Money(report.UndatedExpenseTotal)</b><span>@report.UndatedExpenses.Count expenses without a payment date</span></div>
+                </div>
+                <p class="tax-caption">These amounts are excluded from the annual totals and included in the worksheet's unassigned-records appendix.</p>
+            }
+            @if (report.ReviewItems.Count > 0)
+            {
+                @foreach (var group in report.ReviewItems.GroupBy(x => x.Area))
+                {
+                    <details class="tax-review-group">
+                        <summary>@group.Key <span>@group.Count() reminders</span></summary>
+                        <ul>
+                            @foreach (var item in group) { <li><a href="@item.Href">@item.Record <span aria-hidden="true">↗</span></a><p>@item.Reason</p></li> }
+                        </ul>
+                    </details>
+                }
+            }
+            else { <p class="tax-complete">No missing-data reminders in these records. Your preparer should still confirm completeness and tax treatment.</p> }
+        </section>
+
+        <div class="tax-summary-grid">
+            <section class="tax-card">
+                <div class="tax-section-header"><div><p class="page-kicker">Received during @report.Year</p><h2>Income by payer</h2></div>
+                    <a class="tax-download" href="@($"/tax-center/{report.Year}/export/income.csv")" data-enhance-nav="false">CSV ↓</a></div>
+                <div class="tax-table-wrap"><table><thead><tr><th>Payer / type</th><th>Fees</th><th>Allowances</th><th>Received</th></tr></thead><tbody>
+                    @foreach (var payer in report.Payers)
+                    {
+                        <tr><td><b>@payer.Payer</b><small>@TaxRecordLabels.Income(payer.IncomeKind) · @payer.Count payments</small></td><td>@Money(payer.Fees)</td><td>@Money(payer.Reimbursements)</td><td>@Money(payer.Total)</td></tr>
+                    }
+                    @if (report.Payers.Count == 0) { <tr><td colspan="4">No payments with a receipt date in this year.</td></tr> }
+                </tbody></table></div>
+                <div class="tax-income-types"><span>Contractor <b>@Money(report.ContractorReceipts)</b></span><span>Employee <b>@Money(report.EmployeeReceipts)</b></span><span>Unclassified <b>@Money(report.UnclassifiedReceipts)</b></span></div>
+                <p class="tax-caption">@TaxReportExporter.IncomeBasis</p>
+            </section>
+
+            <section class="tax-card">
+                <div class="tax-section-header"><div><p class="page-kicker">Paid during @report.Year</p><h2>Expense categories</h2></div>
+                    <a class="tax-download" href="@($"/tax-center/{report.Year}/export/expenses.csv")" data-enhance-nav="false">CSV ↓</a></div>
+                <div class="tax-table-wrap"><table><thead><tr><th>Category</th><th>Spending</th><th>Business portion*</th></tr></thead><tbody>
+                    @foreach (var category in report.Categories)
+                    {
+                        <tr><td><b>@category.Category</b><small>@category.Count records · @category.UnclassifiedCount unallocated</small></td><td>@Money(category.Amount)</td><td>@Money(category.BusinessPortion)</td></tr>
+                    }
+                    @if (report.Categories.Count == 0) { <tr><td colspan="3">No expenses with a payment date in this year.</td></tr> }
+                </tbody></table></div>
+                <p class="tax-caption">*Recorded business portions before tax adjustments. @TaxReportExporter.ExpenseBasis</p>
+            </section>
+        </div>
+
+        <section class="tax-card">
+            <div class="tax-section-header"><div><p class="page-kicker">Travel support</p><h2>Mileage &amp; receipts</h2></div>
+                <a class="tax-download" href="@($"/tax-center/{report.Year}/export/mileage.csv")" data-enhance-nav="false">Mileage CSV ↓</a></div>
+            <div class="tax-travel-summary"><div><b>@report.BusinessMiles.ToString("N2", Us)</b><span>Business miles · user classified</span></div><div><b>@report.PersonalMiles.ToString("N2", Us)</b><span>Commuting / personal miles</span></div><div><b>@report.UnclassifiedMiles.ToString("N2", Us)</b><span>Miles needing classification</span></div><div><b>@report.Receipts.Count</b><span>Original receipt attachments</span></div></div>
+            <p class="tax-caption">@TaxReportExporter.MileageBasis</p>
+            <details class="tax-review-group"><summary>Receipt index <span>@report.Receipts.Count files</span></summary>
+                <ul class="tax-receipt-list">
+                    @foreach (var receipt in report.Receipts)
+                    {
+                        <li><a href="@($"/expenses/details/{receipt.ExpenseId}")">Expense #@receipt.ExpenseId</a><span>@receipt.FileName</span><a href="@($"/expenses/receipts/{receipt.Id}?download=true")" data-enhance-nav="false">Download ↓</a></li>
+                    }
+                    @if (report.Receipts.Count == 0) { <li>No receipts attached to the expenses in this worksheet.</li> }
+                </ul>
+            </details>
+        </section>
+
+        <section class="tax-card tax-notes-card">
+            <div class="tax-section-header"><div><p class="page-kicker">Make the handoff personal</p><h2>Details for your preparer</h2></div></div>
+            <p>Saved with this year and included in the worksheet and packet.</p>
+            <EditForm Model="profileInput" OnValidSubmit="SaveProfile" FormName="taxYearProfile">
+                <DataAnnotationsValidator /><ValidationSummary />
+                <div class="form-grid">
+                    <div class="form-field form-field-full"><label for="taxBusinessName">Business name (optional)</label><InputText id="taxBusinessName" @bind-Value="profileInput.BusinessName" class="form-input" maxlength="200" disabled="saving" /></div>
+                    <div class="form-field form-field-full"><label for="taxPreparerNotes">Notes &amp; information recorded elsewhere</label><InputTextArea id="taxPreparerNotes" @bind-Value="profileInput.PreparerNotes" class="form-input form-textarea" maxlength="4000" disabled="saving" placeholder="Other income, split payments, refunds, reimbursements and dates, vehicle details and annual mileage, or questions for your preparer." /></div>
+                </div>
+                <div class="tax-save-row"><button class="primary-btn" type="submit" disabled="saving">@(saving ? "Saving…" : "Save details")</button><span role="status">@saveMessage</span></div>
+            </EditForm>
+        </section>
+        <p class="tax-scope">@TaxReportExporter.ScopeNote</p>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "year")] public int? RequestedYear { get; set; }
+    private static readonly CultureInfo Us = CultureInfo.GetCultureInfo("en-US");
+    private List<int> years = [DateTime.Today.Year, DateTime.Today.Year - 1];
+    private int selectedYear = DateTime.Today.Year;
+    private TaxReport? report;
+    private TaxYearProfile profileInput = new();
+    private string? userId;
+    private bool loading = true;
+    private bool saving;
+    private bool includeReceipts = true;
+    private string? error;
+    private string? saveMessage;
+    private string PacketUrl => $"/tax-center/{report!.Year}/packet?receipts={includeReceipts.ToString().ToLowerInvariant()}";
+    private static string Money(decimal amount) => amount.ToString("C2", Us);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        selectedYear = RequestedYear is >= 1900 and <= 9998 ? RequestedYear.Value : DateTime.Today.Year;
+        await Reload();
+    }
+
+    private async Task Reload()
+    {
+        loading = true;
+        report = null;
+        error = null;
+        saveMessage = null;
+        try
+        {
+            var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            userId = auth.User.Identity?.IsAuthenticated == true ? auth.User.FindFirstValue(ClaimTypes.NameIdentifier) : null;
+            if (string.IsNullOrWhiteSpace(userId)) { Navigation.NavigateTo("/Account/Login"); return; }
+            years = await Reader.GetYearsAsync(userId);
+            if (!years.Contains(selectedYear)) years = years.Append(selectedYear).OrderByDescending(x => x).ToList();
+            report = await Reader.ReadAsync(userId, selectedYear);
+            if (report == null) { error = "Your account could not be loaded. Please sign in again."; return; }
+            profileInput = new() { UserId = userId, TaxYear = report.Year, BusinessName = report.Profile.BusinessName, PreparerNotes = report.Profile.PreparerNotes };
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Could not load tax worksheet.");
+            error = "The tax records could not be loaded. Please try again.";
+        }
+        finally { loading = false; }
+    }
+
+    private void ChangeYear() => Navigation.NavigateTo($"/tax-center?year={selectedYear}");
+
+    private async Task SaveProfile()
+    {
+        if (saving || loading || report == null || string.IsNullOrWhiteSpace(userId)) return;
+        saving = true;
+        saveMessage = null;
+        error = null;
+        try
+        {
+            var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (auth.User.FindFirstValue(ClaimTypes.NameIdentifier) != userId) { Navigation.NavigateTo("/Account/Login"); return; }
+            await using var db = await DbFactory.CreateDbContextAsync();
+            var profile = await db.TaxYearProfiles.SingleOrDefaultAsync(x => x.UserId == userId && x.TaxYear == report.Year);
+            if (profile == null) { profile = new() { UserId = userId, TaxYear = report.Year }; db.TaxYearProfiles.Add(profile); }
+            profile.BusinessName = profileInput.BusinessName?.Trim();
+            profile.PreparerNotes = profileInput.PreparerNotes?.Trim();
+            await db.SaveChangesAsync();
+            report.Profile.BusinessName = profile.BusinessName;
+            report.Profile.PreparerNotes = profile.PreparerNotes;
+            saveMessage = "Saved. Your worksheet and packet include these details.";
+        }
+        catch (DbUpdateException ex)
+        {
+            Logger.LogError(ex, "Could not save tax handoff details.");
+            error = "The details could not be saved. Please reload and try again.";
+        }
+        finally { saving = false; }
+    }
+}

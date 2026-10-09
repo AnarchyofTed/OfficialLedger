@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace OfficialLedger.Models;
 
 public class Game
@@ -22,6 +24,14 @@ public class Game
     public decimal MilesDriven { get; set; }
 
     public bool IsPaid { get; set; }
+    public DateTime? PaidDate { get; set; }
+    [MaxLength(200)] public string? PayerName { get; set; }
+    [MaxLength(16)] public string IncomeKind { get; set; } = "Review";
+    public decimal TravelReimbursement { get; set; }
+    public DateTime? TravelDate { get; set; }
+    [MaxLength(200)] public string? TravelOrigin { get; set; }
+    [MaxLength(500)] public string? TravelPurpose { get; set; }
+    [MaxLength(16)] public string MileageKind { get; set; } = "Review";
 
     public string? Notes { get; set; }
 }

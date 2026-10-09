@@ -1,0 +1,75 @@
+.tax-page { max-width: 1440px; }
+.tax-year-label { min-width: 165px; font-size: 12px; font-weight: 700; color: var(--ol-muted); }
+.tax-year-label select { margin-top: 8px; min-height: 44px; }
+.tax-handoff { display: grid; grid-template-columns: 1fr minmax(270px, .52fr); align-items: center; gap: 32px; padding: 30px; border: 1px solid #abc4df; border-radius: 14px; background: linear-gradient(115deg, #e0e9ed, #efe6d7); margin-bottom: 20px; }
+.tax-handoff h2 { margin: 14px 0 10px; font-size: clamp(22px, 2.4vw, 30px); font-weight: 800; line-height: 1.2; }
+.tax-handoff p { margin: 0 0 14px; color: #465871; font-size: 14px; max-width: 530px; line-height: 1.6; }
+.tax-handoff small { font-size: 12px; color: #465871; line-height: 1.5; }
+.tax-tag { padding: 6px 9px; color: #265181; background: #d0dfec; border-radius: 5px; font-size: 10px; letter-spacing: .11em; font-weight: 800; }
+.tax-export-actions { display: grid; gap: 12px; }
+.tax-export-actions a { justify-content: space-between; min-height: 48px; }
+.tax-receipt-toggle { display: flex; align-items: center; gap: 9px; font-size: 12px; cursor: pointer; min-height: 30px; }
+.tax-receipt-toggle input { width: 17px; height: 17px; accent-color: #245d96; }
+.tax-metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin: 20px 0; }
+.tax-metrics article { display: flex; flex-direction: column; gap: 12px; padding: 22px; background: var(--ol-paper); border: 1px solid var(--ol-line-dark); border-radius: 12px; }
+.tax-metrics article > span { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--ol-muted); }
+.tax-metrics strong { font-size: clamp(22px, 2.2vw, 31px); font-variant-numeric: tabular-nums; line-height: 1.2; overflow-wrap: anywhere; }
+.tax-metrics small { font-size: 11px; color: var(--ol-muted); line-height: 1.5; }
+.tax-review-metric { border-top: 3px solid #ba8d43 !important; }
+.tax-card { min-width: 0; background: var(--ol-paper); border: 1px solid var(--ol-line-dark); border-radius: 12px; padding: 26px; margin-bottom: 20px; }
+.tax-card h2 { margin: 6px 0 0; font-size: 22px; font-weight: 800; line-height: 1.25; }
+.tax-card > p { margin-top: 15px; color: var(--ol-muted); font-size: 13px; line-height: 1.65; }
+.tax-section-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.tax-badge { font-size: 11px; font-weight: 700; border: 1px solid #cbb999; border-radius: 20px; background: #ede2ce; padding: 6px 10px; white-space: nowrap; }
+.tax-unassigned { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 17px; margin: 18px 0 0; border-radius: 8px; background: #ede2ce; }
+.tax-unassigned div, .tax-travel-summary div { display: flex; flex-direction: column; gap: 5px; }
+.tax-unassigned b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.tax-unassigned span { font-size: 12px; line-height: 1.5; }
+.tax-caption { color: var(--ol-muted); font-size: 11px !important; line-height: 1.65; }
+.tax-review-group { border-top: 1px solid var(--ol-line-dark); margin-top: 14px; }
+.tax-review-group summary { cursor: pointer; padding: 14px 0; min-height: 44px; font-size: 13px; font-weight: 800; }
+.tax-review-group summary span { font-size: 11px; font-weight: 400; color: var(--ol-muted); margin-left: 12px; }
+.tax-review-group ul { margin: 0; padding: 0; list-style: none; }
+.tax-review-group li { padding: 12px 0; border-top: 1px solid var(--ol-line-dark); }
+.tax-review-group a { color: #245b95; font-size: 12px; font-weight: 750; }
+.tax-review-group p { margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: var(--ol-muted); }
+.tax-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.tax-table-wrap { max-width: 100%; overflow-x: auto; margin-top: 24px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-transform: uppercase; color: var(--ol-muted); font-size: 10px; font-weight: 800; }
+th, td { padding: 13px 8px; text-align: right; border-bottom: 1px solid var(--ol-line-dark); font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child { text-align: left; }
+td:not(:first-child) { white-space: nowrap; }
+td:first-child { min-width: 130px; overflow-wrap: anywhere; }
+td small { display: block; margin-top: 5px; font-size: 10px; color: var(--ol-muted); line-height: 1.5; }
+.tax-download { color: #245b95; font-size: 12px; font-weight: 800; white-space: nowrap; min-height: 44px; display: flex; align-items: center; }
+.tax-income-types { display: grid; gap: 8px; margin-top: 20px; font-size: 12px; }
+.tax-income-types span { display: flex; justify-content: space-between; gap: 12px; color: var(--ol-muted); }
+.tax-income-types b { color: var(--ol-ink); font-variant-numeric: tabular-nums; }
+.tax-travel-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin: 26px 0 0; }
+.tax-travel-summary b { font-size: 26px; font-variant-numeric: tabular-nums; }
+.tax-travel-summary span { color: var(--ol-muted); font-size: 11px; line-height: 1.5; }
+.tax-receipt-list li { display: grid; grid-template-columns: 110px 1fr 90px; gap: 14px; align-items: center; }
+.tax-receipt-list span { overflow-wrap: anywhere; font-size: 12px; color: var(--ol-muted); }
+.tax-notes-card ::deep .form-grid { margin-top: 20px; }
+.tax-save-row { display: flex; align-items: center; gap: 18px; margin-top: 20px; }
+.tax-save-row span { font-size: 12px; color: #17603e; }
+.tax-scope { font-size: 11px; color: var(--ol-muted); line-height: 1.7; margin: 26px 0 0; }
+.tax-empty h2 { margin: 0 0 10px; }
+.tax-complete { color: #17603e !important; }
+@media (max-width: 1200px) { .tax-summary-grid { grid-template-columns: 1fr; } .tax-handoff { gap: 22px; } .tax-metrics { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 680px) {
+    .tax-year-label { width: 100%; }
+    .tax-handoff { grid-template-columns: 1fr; padding: 22px 18px; }
+    .tax-card { padding: 22px 17px; }
+    .tax-metrics { gap: 10px; }
+    .tax-metrics article { padding: 16px; }
+    .tax-metrics strong { font-size: 24px; }
+    .tax-unassigned { grid-template-columns: 1fr; }
+    .tax-travel-summary { grid-template-columns: 1fr 1fr; }
+    .tax-badge { font-size: 10px; padding-inline: 8px; }
+    .tax-card h2 { font-size: 20px; }
+    .tax-receipt-list li { grid-template-columns: 1fr auto; }
+    .tax-receipt-list span { grid-column: 1 / -1; grid-row: 2; }
+    .tax-save-row { align-items: stretch; flex-direction: column; }
+}

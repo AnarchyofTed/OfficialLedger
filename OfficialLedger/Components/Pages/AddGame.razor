@@ -91,10 +91,10 @@
                 </div>
 
                 <div class="form-field checkbox-field">
-                    <label for="isPaid">Paid</label>
+                    <label for="isPaid">Paid in full</label>
                     <div class="checkbox-row">
                         <InputCheckbox id="isPaid" @bind-Value="Input.IsPaid" class="form-checkbox" />
-                        <span>Mark as already paid</span>
+                        <span>Mark full fee as received</span>
                     </div>
                 </div>
 
@@ -102,6 +102,7 @@
                     <label for="notes">Notes</label>
                     <InputTextArea id="notes" @bind-Value="Input.Notes" class="form-input form-textarea" />
                 </div>
+                <GameTaxFields Model="Input" />
             </div>
 
             <div class="form-actions">
@@ -175,6 +176,7 @@
             Notes = Input.Notes
         };
 
+        Input.ApplyTaxFields(game);
         Db.Games.Add(game);
         await Db.SaveChangesAsync();
 
@@ -195,7 +197,7 @@
         NavigationManager.NavigateTo("/games");
     }
 
-    public class AddGameInputModel
+    public class AddGameInputModel : GameTaxInputModel
     {
         [Required(ErrorMessage = "Season is required.")]
         public int? SeasonId { get; set; }
@@ -213,8 +215,6 @@
 
         [Range(0, 1000, ErrorMessage = "Miles driven must be 0 or greater.")]
         public decimal? MilesDriven { get; set; } = 0m;
-
-        public bool IsPaid { get; set; }
 
         public string? Notes { get; set; }
     }

@@ -1,0 +1,22 @@
+@using OfficialLedger.Models
+
+<details class="tax-fields form-field-full">
+    <summary>Tax details <span>Optional now · useful at tax time</span></summary>
+    <div class="form-grid">
+        <div class="form-field"><label for="expensePaidDate">Date paid</label>
+            <InputDate id="expensePaidDate" @bind-Value="Model.PaidDate" class="form-input" disabled="ReadOnly" />
+            <small>Used to place the expense in an annual cash-method worksheet.</small></div>
+        <div class="form-field"><label for="expenseBusinessUse">Business use (%)</label>
+            <InputNumber id="expenseBusinessUse" @bind-Value="Model.BusinessUsePercent" class="form-input" min="0" max="100" step="0.01" placeholder="Leave blank if uncertain" disabled="ReadOnly" />
+            <ValidationMessage For="() => Model.BusinessUsePercent" /></div>
+        <div class="form-field"><label for="expenseReimbursed">Reimbursement received for this expense</label>
+            <InputNumber id="expenseReimbursed" @bind-Value="Model.ReimbursedAmount" class="form-input" min="0" step="0.01" disabled="ReadOnly" />
+            <ValidationMessage For="() => Model.ReimbursedAmount" /></div>
+    </div>
+    <p>Describe reimbursements and their dates in Notes. Reimbursements stay separate for your preparer to reconcile with game payments.</p>
+</details>
+
+@code {
+    [Parameter, EditorRequired] public ExpenseInputModel Model { get; set; } = null!;
+    [Parameter] public bool ReadOnly { get; set; }
+}
