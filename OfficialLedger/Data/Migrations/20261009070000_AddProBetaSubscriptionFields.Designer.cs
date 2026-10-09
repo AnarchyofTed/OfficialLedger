@@ -12,7 +12,6 @@ using OfficialLedger.Data;
 namespace OfficialLedger.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [DbContext(typeof(ApplicationDbContext))]
     [Migration("20261009070000_AddProBetaSubscriptionFields")]
     partial class AddProBetaSubscriptionFields
     {
