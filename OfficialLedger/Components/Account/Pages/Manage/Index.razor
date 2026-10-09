@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage"
+@page "/Account/Manage"
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
@@ -19,16 +19,32 @@
         <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <input type="text" value="@username" class="form-control" placeholder="Please choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
+            <div class="mb-3">
+                <label for="profile-email" class="form-label">Email address</label>
+                <input id="profile-email" type="email" value="@username" class="form-control" disabled />
+                <div class="form-text">Use the Email settings tab to change your email address.</div>
             </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Please enter your phone number." />
-                <label for="phone-number" class="form-label">Phone number</label>
+            <div class="mb-3">
+                <label for="profile-first-name" class="form-label">First name</label>
+                <InputText id="profile-first-name" @bind-Value="Input.FirstName" class="form-control" autocomplete="given-name" maxlength="100" />
+                <ValidationMessage For="() => Input.FirstName" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="profile-last-name" class="form-label">Last name</label>
+                <InputText id="profile-last-name" @bind-Value="Input.LastName" class="form-control" autocomplete="family-name" maxlength="100" />
+                <ValidationMessage For="() => Input.LastName" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="profile-phone-number" class="form-label">Phone number</label>
+                <InputText id="profile-phone-number" @bind-Value="Input.PhoneNumber" class="form-control" autocomplete="tel" maxlength="32" />
                 <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
+            <div class="mb-3">
+                <label for="profile-address" class="form-label">Address (optional)</label>
+                <InputTextArea id="profile-address" @bind-Value="Input.Address" class="form-control" autocomplete="street-address" maxlength="500" rows="3" />
+                <ValidationMessage For="() => Input.Address" class="text-danger" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Save changes</button>
         </EditForm>
     </div>
 </div>
@@ -46,34 +62,72 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (Input is null) Input = new();
-
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        username = await UserManager.GetUserNameAsync(user);
+        username = await UserManager.GetEmailAsync(user);
         phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
-        Input.PhoneNumber ??= phoneNumber;
+        // Preserve submitted form values on POST, but prefill from the user's profile on GET.
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            Input.FirstName = user.FirstName;
+            Input.LastName = user.LastName;
+            Input.PhoneNumber = phoneNumber;
+            Input.Address = user.Address;
+        }
     }
 
     private async Task OnValidSubmitAsync()
     {
+        var originalFirstName = user.FirstName;
+        var originalLastName = user.LastName;
+        var originalAddress = user.Address;
+
+        user.FirstName = Input.FirstName?.Trim();
+        user.LastName = Input.LastName?.Trim();
+        user.Address = string.IsNullOrWhiteSpace(Input.Address) ? null : Input.Address.Trim();
+
+        var updateResult = await UserManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+        {
+            user.FirstName = originalFirstName;
+            user.LastName = originalLastName;
+            user.Address = originalAddress;
+            RedirectManager.RedirectToCurrentPageWithStatus(
+                "Error: Failed to save your profile details.", HttpContext);
+            return;
+        }
+
         if (Input.PhoneNumber != phoneNumber)
         {
             var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
             if (!setPhoneResult.Succeeded)
             {
-                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
+                RedirectManager.RedirectToCurrentPageWithStatus(
+                    "Your name and address were saved, but the phone number could not be updated.", HttpContext);
+                return;
             }
         }
 
+        // Regenerate the name claims used by the dashboard and sidebar.
         await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated.", HttpContext);
     }
 
     private sealed class InputModel
     {
-        [Phone]
+        [Required, StringLength(100)]
+        [Display(Name = "First name")]
+        public string? FirstName { get; set; }
+
+        [Required, StringLength(100)]
+        [Display(Name = "Last name")]
+        public string? LastName { get; set; }
+
+        [Phone, StringLength(32)]
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
+
+        [StringLength(500)]
+        public string? Address { get; set; }
     }
 }
