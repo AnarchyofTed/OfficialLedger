@@ -13,6 +13,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SportType> SportTypes => Set<SportType>();
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<ExpenseReceipt> ExpenseReceipts => Set<ExpenseReceipt>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -23,6 +24,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<Expense>().Property(x => x.ExpenseDate).HasColumnType("date");
         builder.Entity<Expense>().Property(x => x.Amount).HasPrecision(18, 2);
         builder.Entity<Expense>().HasIndex(x => new { x.UserId, x.ExpenseDate });
+        builder.Entity<ExpenseReceipt>().ToTable("ExpenseReceipt");
+        builder.Entity<ExpenseReceipt>().HasOne(x => x.Expense).WithMany(x => x.Receipts)
+            .HasForeignKey(x => x.ExpenseId).OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<Game>().ToTable("Game");
         builder.Entity<League>().ToTable("League");
@@ -35,4 +39,5 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(x => x.SeasonId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
 

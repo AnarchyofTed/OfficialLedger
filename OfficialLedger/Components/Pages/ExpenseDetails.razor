@@ -8,7 +8,7 @@
 @using Microsoft.EntityFrameworkCore
 @using OfficialLedger.Data
 @using OfficialLedger.Models
-@inject ApplicationDbContext Db
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
@@ -62,6 +62,7 @@
                     <div class="form-field form-field-full"><label for="expenseNotes">Notes</label>
                         <InputTextArea readonly="@(!editing || busy)" id="expenseNotes" @bind-Value="Input.Notes" class="form-input form-textarea" maxlength="2000" /></div>
                 </div>
+                    <ReceiptAttachments @key="Input" Existing="receipts" Pending="pendingReceipts" Removed="removedReceipts" ReadOnly="@(!editing)" Disabled="busy" UploadingChanged="value => receiptLoading = value" />
 
                     <div class="form-actions">
                         @if (!editing)
@@ -75,8 +76,8 @@
                         else
                         {
                             <div class="left-actions">
-                                <button type="submit" class="primary-btn" disabled="@busy">@(busy ? "Saving…" : "Save Changes")</button>
-                                <button type="button" class="secondary-btn" disabled="@busy" @onclick="CancelEdit">Cancel</button>
+                                <button type="submit" class="primary-btn" disabled="@(busy || receiptLoading)">@(busy ? "Saving…" : receiptLoading ? "Reading receipt…" : "Save Changes")</button>
+                                <button type="button" class="secondary-btn" disabled="@(busy || receiptLoading)" @onclick="CancelEdit">Cancel</button>
                             </div>
                         }
                     </div>
@@ -90,6 +91,10 @@
     [Parameter] public int ExpenseId { get; set; }
     private ExpenseInputModel Input { get; set; } = new();
     private ExpenseInputModel original = new();
+    private List<ReceiptInfo> receipts = [];
+    private List<ReceiptUpload> pendingReceipts = [];
+    private HashSet<int> removedReceipts = [];
+    private bool receiptLoading;
     private bool loading = true;
     private bool found;
     private bool editing;
@@ -102,12 +107,17 @@
         found = false;
         editing = false;
         error = null;
+        pendingReceipts = [];
+        removedReceipts = [];
+        receipts = [];
+        receiptLoading = false;
         var userId = await CurrentUserId();
         if (string.IsNullOrWhiteSpace(userId))
         {
             NavigationManager.NavigateTo("/Account/Login");
             return;
         }
+        await using var Db = await DbFactory.CreateDbContextAsync();
         var record = await Db.Expenses.AsNoTracking().FirstOrDefaultAsync(x => x.Id == ExpenseId && x.UserId == userId);
         if (record is not null)
         {
@@ -117,6 +127,10 @@
                 Vendor = record.Vendor, BusinessPurpose = record.BusinessPurpose, Notes = record.Notes
             };
             original = Copy(Input);
+            receipts = await Db.ExpenseReceipts.AsNoTracking()
+                .Where(x => x.ExpenseId == ExpenseId && x.Expense.UserId == userId)
+                .OrderBy(x => x.UploadedAtUtc).ThenBy(x => x.Id)
+                .Select(x => new ReceiptInfo(x.Id, x.FileName, x.ContentType, x.SizeBytes, x.UploadedAtUtc)).ToListAsync();
             found = true;
         }
         loading = false;
@@ -135,20 +149,33 @@
     };
 
     private void EnableEdit() { if (busy) return; editing = true; error = null; }
-    private void CancelEdit() { Input = Copy(original); editing = false; error = null; }
+    private void CancelEdit() { Input = Copy(original); pendingReceipts = []; removedReceipts = []; editing = false; error = null; }
 
     private async Task SaveChanges()
     {
-        if (!editing || busy) return;
+        if (!editing || busy || receiptLoading) return;
         busy = true;
         error = null;
-        Expense? record = null;
         try
         {
             var userId = await CurrentUserId();
             if (string.IsNullOrWhiteSpace(userId)) { NavigationManager.NavigateTo("/Account/Login"); return; }
-            record = await Db.Expenses.FirstOrDefaultAsync(x => x.Id == ExpenseId && x.UserId == userId);
+            await using var Db = await DbFactory.CreateDbContextAsync();
+            await using var transaction = await Db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            var record = await Db.Expenses.FirstOrDefaultAsync(x => x.Id == ExpenseId && x.UserId == userId);
             if (record is null) { found = false; return; }
+            // Re-read IDs at save time; never load receipt bytes just to edit an expense.
+            var savedIds = await Db.ExpenseReceipts.Where(x => x.ExpenseId == ExpenseId)
+                .Select(x => x.Id).ToListAsync();
+            ReceiptFiles.ValidateCount(savedIds.Count(x => !removedReceipts.Contains(x)), pendingReceipts.Count);
+            foreach (var id in savedIds.Where(removedReceipts.Contains))
+                Db.ExpenseReceipts.Remove(new ExpenseReceipt { Id = id });
+            foreach (var upload in pendingReceipts)
+            {
+                var receipt = ReceiptFiles.CreateReceipt(upload);
+                receipt.ExpenseId = ExpenseId;
+                Db.ExpenseReceipts.Add(receipt);
+            }
             record.ExpenseDate = Input.ExpenseDate!.Value.Date;
             record.Category = Input.Category;
             record.Amount = Input.Amount!.Value;
@@ -156,10 +183,12 @@
             record.BusinessPurpose = Input.BusinessPurpose?.Trim();
             record.Notes = Input.Notes?.Trim();
             await Db.SaveChangesAsync();
+            await transaction.CommitAsync();
             original = Copy(Input);
             editing = false;
             NavigationManager.NavigateTo("/expenses");
         }
+        catch (InvalidDataException ex) { error = ex.Message; }
         catch (DbUpdateException ex)
         {
             Logger.LogError(ex, "Could not update expense.");
@@ -167,23 +196,22 @@
         }
         finally
         {
-            if (record is not null) Db.Entry(record).State = EntityState.Detached;
             busy = false;
         }
     }
 
     private async Task DeleteExpense()
     {
-        if (busy || !await JS.InvokeAsync<bool>("confirm", "Delete this expense?")) return;
+        if (busy || receiptLoading || !await JS.InvokeAsync<bool>("confirm", "Delete this expense and its receipts?")) return;
         if (busy) return;
         busy = true;
         error = null;
-        Expense? record = null;
         try
         {
             var userId = await CurrentUserId();
             if (string.IsNullOrWhiteSpace(userId)) { NavigationManager.NavigateTo("/Account/Login"); return; }
-            record = await Db.Expenses.FirstOrDefaultAsync(x => x.Id == ExpenseId && x.UserId == userId);
+            await using var Db = await DbFactory.CreateDbContextAsync();
+            var record = await Db.Expenses.FirstOrDefaultAsync(x => x.Id == ExpenseId && x.UserId == userId);
             if (record is null) { found = false; return; }
             Db.Expenses.Remove(record);
             await Db.SaveChangesAsync();
@@ -196,8 +224,8 @@
         }
         finally
         {
-            if (record is not null) Db.Entry(record).State = EntityState.Detached;
             busy = false;
         }
     }
 }
+

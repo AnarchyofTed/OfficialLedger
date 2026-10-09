@@ -1,0 +1,174 @@
+@using OfficialLedger.Data
+@implements IDisposable
+@inject ILogger<ReceiptAttachments> Logger
+
+<section class="receipt-section" aria-label="Expense receipts">
+    <div class="receipt-heading"><h3>Receipts</h3><span>@ReceiptCount / @ReceiptFiles.MaxReceipts</span></div>
+    @if (!ReadOnly)
+    {
+        <p class="receipt-help">Take a photo or attach a receipt. Images and PDFs only, up to 10 MB each. Saved with your expense.</p>
+        <div class="receipt-pickers">
+            <label class="secondary-btn receipt-picker">
+                <span>Take Photo</span>
+                <InputFile @key="cameraKey" OnChange="SelectFiles" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" disabled="@InputsDisabled" aria-label="Take a receipt photo" />
+            </label>
+            <label class="secondary-btn receipt-picker">
+                <span>Choose Receipts</span>
+                <InputFile @key="pickerKey" OnChange="SelectFiles" accept="@ReceiptFiles.Accept" multiple disabled="@InputsDisabled" aria-label="Choose receipt images or PDFs" />
+            </label>
+        </div>
+        @if (uploading)
+        {
+            <p class="receipt-status" role="status">Reading @currentFile… @progress%</p>
+        }
+        @if (errors.Count > 0)
+        {
+            <div class="validation-summary" role="alert">
+                @foreach (var message in errors) { <p>@message</p> }
+            </div>
+        }
+    }
+    @if (ReceiptCount == 0)
+    {
+        <p class="receipt-help">No receipts attached.</p>
+    }
+    <div class="receipt-cards">
+        @foreach (var receipt in Existing.Where(x => !Removed.Contains(x.Id)))
+        {
+            <article class="receipt-card" @key="receipt.Id">
+                @if (ReceiptFiles.CanPreview(receipt.ContentType))
+                {
+                    <a href="@ReceiptFiles.ViewUrl(receipt.Id)" target="_blank" rel="noopener"><img class="receipt-thumbnail" src="@ReceiptFiles.ViewUrl(receipt.Id)" alt="@($"Receipt: {receipt.FileName}")" loading="lazy" /></a>
+                }
+                <div class="receipt-info"><strong>@receipt.FileName</strong><small>@FormatSize(receipt.SizeBytes) · Saved</small></div>
+                <div class="receipt-actions">
+                    @if (ReceiptFiles.CanPreview(receipt.ContentType) || receipt.ContentType == "application/pdf")
+                    {
+                        <a class="secondary-btn" href="@ReceiptFiles.ViewUrl(receipt.Id)" target="_blank" rel="noopener">View</a>
+                    }
+                    <a class="secondary-btn" href="@ReceiptFiles.DownloadUrl(receipt.Id)">Download</a>
+                    @if (!ReadOnly)
+                    {
+                        <button type="button" class="secondary-btn" disabled="@(Disabled || uploading)" @onclick="() => Removed.Add(receipt.Id)" aria-label="@($"Remove {receipt.FileName}")">Remove</button>
+                    }
+                </div>
+            </article>
+        }
+        @foreach (var upload in Pending)
+        {
+            <article class="receipt-card" @key="upload">
+                @if (upload.PreviewUrl is not null)
+                {
+                    <img class="receipt-thumbnail" src="@upload.PreviewUrl" alt="@($"Selected receipt: {upload.FileName}")" />
+                }
+                <div class="receipt-info"><strong>@upload.FileName</strong><small>@FormatSize(upload.Content.LongLength) · Ready to save</small></div>
+                <button type="button" class="secondary-btn" disabled="@(Disabled || uploading)" @onclick="() => Pending.Remove(upload)" aria-label="@($"Remove {upload.FileName}")">Remove</button>
+            </article>
+        }
+    </div>
+    @if (Removed.Count > 0)
+    {
+        <p class="receipt-help">@Removed.Count receipt(s) will be removed when you save. <button type="button" class="secondary-btn" disabled="@(Disabled || uploading)" @onclick="() => Removed.Clear()">Undo removals</button></p>
+    }
+</section>
+
+@code {
+    [Parameter] public List<ReceiptUpload> Pending { get; set; } = [];
+    [Parameter] public IReadOnlyList<ReceiptInfo> Existing { get; set; } = [];
+    [Parameter] public HashSet<int> Removed { get; set; } = [];
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback<bool> UploadingChanged { get; set; }
+
+    private readonly CancellationTokenSource lifetime = new();
+    private readonly List<string> errors = [];
+    private bool uploading;
+    private string currentFile = "receipt";
+    private int progress;
+    private int cameraKey;
+    private int pickerKey;
+    private int ReceiptCount => Existing.Count(x => !Removed.Contains(x.Id)) + Pending.Count;
+    private bool InputsDisabled => Disabled || uploading || ReceiptCount >= ReceiptFiles.MaxReceipts;
+    private static string FormatSize(long bytes) => bytes >= 1024 * 1024 ? $"{bytes / (1024m * 1024):0.0} MB" : $"{Math.Max(1, bytes / 1024):N0} KB";
+
+    private async Task SelectFiles(InputFileChangeEventArgs args)
+    {
+        if (Disabled || ReadOnly || uploading) return;
+        errors.Clear();
+        var remaining = ReceiptFiles.MaxReceipts - ReceiptCount;
+        if (args.FileCount > remaining)
+        {
+            errors.Add($"You can attach up to {ReceiptFiles.MaxReceipts} receipts per expense. Choose {remaining} or fewer files.");
+            cameraKey++;
+            pickerKey++;
+            return;
+        }
+        uploading = true;
+        await UploadingChanged.InvokeAsync(true);
+        try
+        {
+            foreach (var file in args.GetMultipleFiles(ReceiptFiles.MaxReceipts))
+            {
+                currentFile = ReceiptFiles.SafeFileName(file.Name);
+                progress = 0;
+                try
+                {
+                    if (file.Size <= 0 || file.Size > ReceiptFiles.MaxFileBytes)
+                        throw new InvalidDataException("Receipts must be between 1 byte and 10 MB.");
+                    // Enforce the stream limit as well as checking the browser-reported size.
+                    await using var source = file.OpenReadStream(ReceiptFiles.MaxFileBytes, lifetime.Token);
+                    using var destination = new MemoryStream();
+                    var buffer = new byte[64 * 1024];
+                    int read;
+                    while ((read = await source.ReadAsync(buffer, lifetime.Token)) > 0)
+                    {
+                        if (destination.Length + read > ReceiptFiles.MaxFileBytes)
+                            throw new InvalidDataException("Receipts must be 10 MB or smaller.");
+                        await destination.WriteAsync(buffer.AsMemory(0, read), lifetime.Token);
+                        progress = (int)Math.Min(100, destination.Length * 100 / Math.Max(1, file.Size));
+                        StateHasChanged();
+                    }
+                    var content = destination.ToArray();
+                    var contentType = ReceiptFiles.DetectContentType(content);
+                    string? preview = null;
+                    if (ReceiptFiles.CanPreview(contentType))
+                    {
+                        try
+                        {
+                            var thumbnail = await file.RequestImageFileAsync("image/jpeg", 600, 600);
+                            await using var thumbnailStream = thumbnail.OpenReadStream(512 * 1024, lifetime.Token);
+                            using var thumbnailBytes = new MemoryStream();
+                            await thumbnailStream.CopyToAsync(thumbnailBytes, lifetime.Token);
+                            preview = $"data:image/jpeg;base64,{Convert.ToBase64String(thumbnailBytes.ToArray())}";
+                        }
+                        catch (Exception ex) when (ex is not OperationCanceledException)
+                        {
+                            // Keep the original even when this browser cannot create a thumbnail.
+                            Logger.LogDebug(ex, "Receipt thumbnail unavailable.");
+                        }
+                    }
+                    Pending.Add(new(currentFile, contentType, content, preview));
+                }
+                catch (InvalidDataException ex) { errors.Add($"{currentFile}: {ex.Message}"); }
+                catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { return; }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "Could not read selected receipt.");
+                    errors.Add($"{currentFile}: Could not read this receipt. Please choose it again.");
+                }
+            }
+        }
+        finally
+        {
+            uploading = false;
+            if (!lifetime.IsCancellationRequested)
+            {
+                cameraKey++;
+                pickerKey++;
+                await UploadingChanged.InvokeAsync(false);
+            }
+        }
+    }
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}

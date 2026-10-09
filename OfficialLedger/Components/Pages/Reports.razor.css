@@ -1,4 +1,9 @@
 .report-filter { max-width: 100%; min-width: 210px; min-height: 44px; cursor: pointer; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 700; }
+.report-receipts { margin-top: 20px; }
+.report-receipts summary { min-height: 44px; cursor: pointer; font-weight: 700; }
+.report-receipt-link { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; padding: 14px 0; border-bottom: 1px solid var(--ol-line-dark); text-decoration: none; }
+.report-receipt-link span { overflow-wrap: anywhere; }
+.report-receipt-link small { grid-column: 1 / -1; color: var(--ol-muted); }
 .report-filter:disabled { cursor: wait; }
 @media (max-width: 680px) { .report-filter { width: 100%; } }
 
@@ -12,3 +17,4 @@
 .report-expense-table th:last-child, .report-expense-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .report-expense-note { margin: 18px 0 0; line-height: 1.5; }
 @media (max-width: 680px) { .report-expenses-card .report-card-header { flex-wrap: wrap; } }
+
