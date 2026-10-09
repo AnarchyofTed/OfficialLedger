@@ -10,6 +10,9 @@ namespace OfficialLedger.Data
         public string? LastName { get; set; }
         [System.ComponentModel.DataAnnotations.StringLength(500)]
         public string? Address { get; set; }
+        [System.ComponentModel.DataAnnotations.MaxLength(16)]
+        public string Plan { get; set; } = "Free";
+        public bool IsBetaProAccount { get; set; }
         public decimal MileageRate { get; set; } = 0.67m;
 
         public ApplicationUser()
