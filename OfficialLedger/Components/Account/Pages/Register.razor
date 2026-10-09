@@ -2,6 +2,9 @@
 
 @using System.ComponentModel.DataAnnotations
 @using System.Text
+@using System.Text.Json
+@using System.Security.Cryptography
+@using Microsoft.AspNetCore.DataProtection
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
@@ -9,6 +12,8 @@
 @using Microsoft.EntityFrameworkCore
 
 @inject ApplicationDbContext Db
+@inject IDataProtectionProvider DataProtection
+@inject IConfiguration Configuration
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
@@ -22,14 +27,15 @@
 <section class="auth-card">
     <div class="auth-card-heading">
         <p class="page-kicker">@SelectedPlanLabel</p>
-        <h1>@(Input.DetailsStep ? "Finish your signup." : "Create your ledger.")</h1>
-        <p>@(Input.DetailsStep ? "Step 2 of 2: tell us a little about yourself." : "Step 1 of 2: start with your email address.")</p>
+        <h1>@(Input.PaymentStep && IsProPlan ? "Your Pro account awaits." : Input.DetailsStep ? "Finish your signup." : "Create your ledger.")</h1>
+        <p>@(Input.PaymentStep && IsProPlan ? "Step 3 of 3: payment details." : Input.DetailsStep ? (IsProPlan ? "Step 2 of 3: tell us a little about yourself." : "Step 2 of 2: tell us a little about yourself.") : (IsProPlan ? "Step 1 of 3: start with your email address." : "Step 1 of 2: start with your email address."))</p>
     </div>
     <StatusMessage Message="@(signupError ?? Message)" />
     <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" asp-route-plan="@Plan" method="post" OnValidSubmit="RegisterUser" FormName="register" class="auth-form">
         <DataAnnotationsValidator />
         <ValidationSummary class="validation-summary" role="alert" />
         <input type="hidden" name="Input.DetailsStep" value="@Input.DetailsStep.ToString()" />
+        <input type="hidden" name="Input.PaymentStep" value="@Input.PaymentStep.ToString()" />
         @if (!Input.DetailsStep)
         {
             <div class="auth-field">
@@ -38,6 +44,57 @@
                 <ValidationMessage For="() => Input.Email" class="field-validation" />
             </div>
             <button type="submit" class="ol-button ol-button-blue auth-submit">Sign Up <span>↗</span></button>
+        }
+        else if (Input.PaymentStep && IsProPlan)
+        {
+            <input type="hidden" name="Input.Email" value="@Input.Email" />
+            <input type="hidden" name="Input.ProtectedDetails" value="@Input.ProtectedDetails" />
+
+            <div class="beta-payment-intro">
+                <strong>Pro plan — $39/year</strong>
+                <span>Free during beta</span>
+            </div>
+            <p class="beta-payment-message" id="beta-payment-message">
+                @if (IsBetaMode)
+                {
+                    <text>Payment is disabled during our beta. No credit card is needed and you will not be charged. Your account will be created with Pro access.</text>
+                }
+                else
+                {
+                    <text>Pro checkout is not available yet. A secure payment provider must be connected before paid signups can be accepted.</text>
+                }
+            </p>
+            <fieldset class="beta-payment-fields" disabled aria-describedby="beta-payment-message">
+                <legend>Payment information</legend>
+                <div class="auth-field">
+                    <label for="pro-card-name">Name on card</label>
+                    <input id="pro-card-name" class="auth-input" type="text" placeholder="Cardholder name" autocomplete="off" disabled />
+                </div>
+                <div class="auth-field">
+                    <label for="pro-card-number">Card number</label>
+                    <input id="pro-card-number" class="auth-input" type="text" placeholder="•••• •••• •••• ••••" autocomplete="off" disabled />
+                </div>
+                <div class="beta-payment-row">
+                    <div class="auth-field">
+                        <label for="pro-expiration">Expiration</label>
+                        <input id="pro-expiration" class="auth-input" type="text" placeholder="MM / YY" autocomplete="off" disabled />
+                    </div>
+                    <div class="auth-field">
+                        <label for="pro-cvc">Security code</label>
+                        <input id="pro-cvc" class="auth-input" type="text" placeholder="CVC" autocomplete="off" disabled />
+                    </div>
+                </div>
+            </fieldset>
+            @if (IsBetaMode)
+            {
+                <button type="submit" class="ol-button ol-button-blue auth-submit">Create Pro Account <span>↗</span></button>
+                <p class="auth-note">Your Pro access is free during beta. We will ask you to choose a paid plan before any future billing.</p>
+            }
+            else
+            {
+                <button type="button" class="ol-button ol-button-blue auth-submit" disabled>Secure checkout required</button>
+            }
+            <p class="auth-note">Signing up as @Input.Email · <a href="@NavigationManager.Uri" data-enhance-nav="false">Start over</a></p>
         }
         else
         {
@@ -73,7 +130,7 @@
                 <InputText id="register-confirm" type="password" @bind-Value="Input.ConfirmPassword" class="auth-input" autocomplete="new-password" aria-required="true" maxlength="100" />
                 <ValidationMessage For="() => Input.ConfirmPassword" class="field-validation" />
             </div>
-            <button type="submit" class="ol-button ol-button-blue auth-submit">Create account <span>↗</span></button>
+            <button type="submit" class="ol-button ol-button-blue auth-submit">@(IsProPlan ? "Continue to payment" : "Create Free Account") <span>↗</span></button>
         }
         <p class="auth-note">By continuing, you agree to keep the game moving.</p>
         <p class="auth-switch">Already have an account? <a href="/Account/Login">Log in</a></p>
@@ -93,7 +150,11 @@
     [SupplyParameterFromQuery]
     private string? Plan { get; set; }
 
-    private string SelectedPlanLabel => string.IsNullOrWhiteSpace(Plan) ? "Start free" : $"{Plan} plan";
+    private bool IsProPlan => string.Equals(Plan, "Pro", StringComparison.OrdinalIgnoreCase);
+    private bool IsBetaMode => Configuration.GetValue<bool>("Billing:BetaMode");
+    private string SelectedPlanLabel => IsProPlan ? "Pro plan" : "Free plan";
+    private ITimeLimitedDataProtector RegistrationProtector =>
+        DataProtection.CreateProtector("BlueLedger.Registration.ProDetails.v1").ToTimeLimitedDataProtector();
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
@@ -130,16 +191,68 @@
             return;
         }
 
+        if (Input.PaymentStep && !IsProPlan)
+        {
+            signupError = "Error: Restart signup to choose a plan.";
+            return;
+        }
+
+        PendingRegistration? pending = null;
+        if (IsProPlan && !Input.PaymentStep)
+        {
+            // Preserve the password only in a time-limited, encrypted/authenticated payload.
+            // Never put raw password or credit-card data in hidden HTML form inputs.
+            pending = new PendingRegistration(Input.Email, Input.FirstName, Input.LastName,
+                Input.PhoneNumber, Input.Address, Input.Password);
+            Input.ProtectedDetails = RegistrationProtector.Protect(
+                JsonSerializer.Serialize(pending), TimeSpan.FromMinutes(20));
+            Input.Password = "";
+            Input.ConfirmPassword = "";
+            Input.PaymentStep = true;
+            return;
+        }
+
+        if (IsProPlan)
+        {
+            // Fail closed when beta is disabled. Paid checkout must use a PCI-compliant
+            // hosted checkout/provider token, not card fields posted to our server.
+            if (!IsBetaMode)
+            {
+                signupError = "Pro registration requires secure checkout, which is not yet available.";
+                return;
+            }
+
+            try
+            {
+                pending = JsonSerializer.Deserialize<PendingRegistration>(
+                    RegistrationProtector.Unprotect(Input.ProtectedDetails ?? ""));
+            }
+            catch (Exception ex) when (ex is CryptographicException or JsonException or FormatException or ArgumentException)
+            {
+                signupError = "Your signup session expired. Please restart registration.";
+                return;
+            }
+
+            if (pending is null || !string.Equals(pending.Email, Input.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                signupError = "Your signup session could not be verified. Please restart registration.";
+                return;
+            }
+        }
+
         var user = CreateUser();
-        user.FirstName = Input.FirstName.Trim();
-        user.LastName = Input.LastName.Trim();
-        user.PhoneNumber = Input.PhoneNumber.Trim();
-        user.Address = string.IsNullOrWhiteSpace(Input.Address) ? null : Input.Address.Trim();
+        user.FirstName = (pending?.FirstName ?? Input.FirstName).Trim();
+        user.LastName = (pending?.LastName ?? Input.LastName).Trim();
+        user.PhoneNumber = (pending?.PhoneNumber ?? Input.PhoneNumber).Trim();
+        var address = pending?.Address ?? Input.Address;
+        user.Address = string.IsNullOrWhiteSpace(address) ? null : address.Trim();
+        user.Plan = IsProPlan ? "Pro" : "Free";
+        user.IsBetaProAccount = IsProPlan && IsBetaMode;
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-        var result = await UserManager.CreateAsync(user, Input.Password);
+        var result = await UserManager.CreateAsync(user, pending?.Password ?? Input.Password);
 
         if (!result.Succeeded)
         {
@@ -191,9 +304,14 @@
         return (IUserEmailStore<ApplicationUser>)UserStore;
     }
 
+    private sealed record PendingRegistration(string Email, string FirstName, string LastName,
+        string PhoneNumber, string? Address, string Password);
+
     public sealed class InputModel : IValidatableObject
     {
         public bool DetailsStep { get; set; }
+        public bool PaymentStep { get; set; }
+        public string? ProtectedDetails { get; set; }
 
         [Required, EmailAddress, StringLength(256)]
         public string Email { get; set; } = "";
@@ -208,6 +326,12 @@
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (!DetailsStep) yield break;
+            if (PaymentStep)
+            {
+                if (string.IsNullOrWhiteSpace(ProtectedDetails))
+                    yield return new ValidationResult("Your signup session expired. Restart registration.", new[] { nameof(ProtectedDetails) });
+                yield break;
+            }
             if (string.IsNullOrWhiteSpace(FirstName))
                 yield return new ValidationResult("Enter your first name.", new[] { nameof(FirstName) });
             if (string.IsNullOrWhiteSpace(LastName))

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OfficialLedger.Data;
 
@@ -11,9 +12,10 @@ using OfficialLedger.Data;
 namespace OfficialLedger.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261009070000_AddProBetaSubscriptionFields")]
+    partial class AddProBetaSubscriptionFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -285,21 +287,6 @@ namespace OfficialLedger.Migrations
                     b.ToTable("Expense");
                 });
 
-            modelBuilder.Entity("OfficialLedger.Models.ExpenseReceipt", b =>
-                {
-                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-                    b.Property<int>("ExpenseId").HasColumnType("int");
-                    b.Property<string>("FileName").IsRequired().HasMaxLength(200).HasColumnType("nvarchar(200)");
-                    b.Property<string>("ContentType").IsRequired().HasMaxLength(64).HasColumnType("nvarchar(64)");
-                    b.Property<long>("SizeBytes").HasColumnType("bigint");
-                    b.Property<DateTime>("UploadedAtUtc").HasColumnType("datetime2");
-                    b.Property<byte[]>("Content").IsRequired().HasColumnType("varbinary(max)");
-                    b.HasKey("Id");
-                    b.HasIndex("ExpenseId");
-                    b.ToTable("ExpenseReceipt");
-                });
-
             modelBuilder.Entity("OfficialLedger.Models.Game", b =>
                 {
                     b.Property<int>("Id")
@@ -498,23 +485,8 @@ namespace OfficialLedger.Migrations
 
                     b.Navigation("SportType");
                 });
-            modelBuilder.Entity("OfficialLedger.Models.ExpenseReceipt", b =>
-                {
-                    b.HasOne("OfficialLedger.Models.Expense", "Expense")
-                        .WithMany("Receipts")
-                        .HasForeignKey("ExpenseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                    b.Navigation("Expense");
-                });
-
-            modelBuilder.Entity("OfficialLedger.Models.Expense", b =>
-                {
-                    b.Navigation("Receipts");
-                });
 #pragma warning restore 612, 618
         }
     }
 }
-
 

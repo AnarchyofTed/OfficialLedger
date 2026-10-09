@@ -209,3 +209,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     .manage-nav .nav { grid-template-columns: repeat(2,minmax(0,1fr)); }
     .manage-nav .nav-link { text-align: center; }
 }
+
+/* Pro beta registration: payment details are an intentionally disabled preview. */
+.beta-payment-intro { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:14px 16px; background:#e5dbcb; border:1px solid #c7bba9; border-radius:10px; }
+.beta-payment-intro strong { font-size:14px; color:var(--ol-ink); }
+.beta-payment-intro span { font-size:12px; font-weight:800; color:#17603e; }
+.beta-payment-message { margin:0; font-size:12px; line-height:1.6; color:var(--ol-muted); }
+.beta-payment-fields { min-width:0; display:grid; gap:15px; padding:17px; border:1px solid #c7bba9; border-radius:10px; }
+.beta-payment-fields legend { padding:0 6px; font-weight:800; font-size:13px; }
+.beta-payment-fields .auth-input:disabled { opacity:.58; cursor:not-allowed; background:#e9e2d9; }
+.beta-payment-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.auth-submit:disabled { cursor:not-allowed; opacity:.6; }
