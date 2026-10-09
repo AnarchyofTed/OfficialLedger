@@ -141,3 +141,31 @@ Check(ReportExpenseFilter.Apply(reportingExpenses, "season:20", reportingSeasons
 Check(ReportExpenseFilter.Apply(reportingExpenses, "season:99", reportingSeasons).Count == 0, "Unavailable expense season accepted.");
 Check(ReportExpenseFilter.Apply(reportingExpenses, "invalid", reportingSeasons).Count == 0, "Invalid expense filter includes records.");
 Console.WriteLine("Report expense date-range checks passed.");
+
+// Email capture is valid before profile/password entry, while account creation requires them.
+var signup = new OfficialLedger.Components.Account.Pages.Register.InputModel { Email = "official@example.com" };
+Check(Valid(signup), "Email-only signup unexpectedly requires profile/password fields.");
+signup.Email = "invalid";
+Check(!Valid(signup), "Invalid signup email accepted.");
+signup.Email = "official@example.com";
+signup.DetailsStep = true;
+Check(!Valid(signup), "Incomplete account details accepted.");
+signup.FirstName = "Blake";
+signup.LastName = "Cox";
+signup.PhoneNumber = "903-555-0100";
+signup.Password = "Example1!";
+signup.ConfirmPassword = signup.Password;
+Check(Valid(signup), "Complete signup with no address rejected.");
+signup.Address = "   ";
+Check(Valid(signup), "Blank optional address rejected.");
+signup.PhoneNumber = "not a phone";
+Check(!Valid(signup), "Invalid required phone number accepted.");
+signup.PhoneNumber = "903-555-0100";
+signup.ConfirmPassword = "different";
+Check(!Valid(signup), "Mismatched signup passwords accepted.");
+var signupEmailModel = db.Model.FindEntityType(typeof(SignupEmail))!;
+Check(signupEmailModel.GetIndexes().Any(x => x.IsUnique && x.Properties.Single().Name == nameof(SignupEmail.NormalizedEmail)),
+    "Signup emails must be deduplicated by normalized email.");
+Check(db.Model.FindEntityType(typeof(ApplicationUser))!.FindProperty(nameof(ApplicationUser.Address))!.IsNullable,
+    "Address must remain optional for new and existing users.");
+Console.WriteLine("Two-step signup validation and model checks passed.");

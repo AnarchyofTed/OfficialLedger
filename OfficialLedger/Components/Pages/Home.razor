@@ -212,7 +212,8 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
 
-        var name = authState.User.Identity?.Name ?? "User";
+        var name = authState.User.FindFirstValue(ClaimTypes.GivenName)
+            ?? authState.User.Identity?.Name ?? "User";
         userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         // Optional: remove email domain if present
