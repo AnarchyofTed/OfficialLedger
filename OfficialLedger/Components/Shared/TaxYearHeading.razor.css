@@ -1,8 +1,6 @@
 .tax-year-heading { display: flex; align-items: center; width: max-content; margin: 0 0 17px; isolation: isolate; }
 .tax-year-digit { position: relative; display: block; font-family: var(--ol-display); font-size: clamp(80px, 8.5vw, 112px); font-weight: 900; line-height: .85; letter-spacing: -.04em; text-shadow: 1px 2px 0 rgba(245,237,222,.65); }
 .tax-year-digit + .tax-year-digit { margin-left: -.12em; }
-.tax-year-light { color: #72b6ec; z-index: 2; transform: rotate(-4deg); }
-.tax-year-dark { color: #24548b; z-index: 1; transform: translateY(.025em) rotate(3deg); }
-.tax-year-digit:nth-child(3) { transform: translateY(-.015em) rotate(-3deg); }
-.tax-year-digit:nth-child(4) { transform: translateY(.025em) rotate(4deg); }
+.tax-year-light { color: #72b6ec; z-index: 2; }
+.tax-year-dark { color: #24548b; z-index: 1; }
 @media (max-width: 680px) { .tax-year-digit { font-size: 84px; } }
