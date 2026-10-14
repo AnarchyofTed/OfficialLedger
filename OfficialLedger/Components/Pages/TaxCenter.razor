@@ -133,10 +133,10 @@
             <EditForm Model="profileInput" OnValidSubmit="SaveProfile" FormName="taxYearProfile">
                 <DataAnnotationsValidator /><ValidationSummary />
                 <div class="form-grid">
-                    <div class="form-field form-field-full"><label for="taxBusinessName">Business name (optional)</label><InputText id="taxBusinessName" @bind-Value="profileInput.BusinessName" class="form-input" maxlength="200" disabled="saving" /></div>
-                    <div class="form-field form-field-full"><label for="taxPreparerNotes">Notes &amp; information recorded elsewhere</label><InputTextArea id="taxPreparerNotes" @bind-Value="profileInput.PreparerNotes" class="form-input form-textarea" maxlength="4000" disabled="saving" placeholder="Other income, split payments, refunds, reimbursements and dates, vehicle details and annual mileage, or questions for your preparer." /></div>
+                    <div class="form-field form-field-full"><label for="taxBusinessName">Business name (optional)</label><InputText id="taxBusinessName" @bind-Value="profileInput.BusinessName" class="form-input" maxlength="200" disabled="@saving" /></div>
+                    <div class="form-field form-field-full"><label for="taxPreparerNotes">Notes &amp; information recorded elsewhere</label><InputTextArea id="taxPreparerNotes" @bind-Value="profileInput.PreparerNotes" class="form-input form-textarea" maxlength="4000" disabled="@saving" placeholder="Other income, split payments, refunds, reimbursements and dates, vehicle details and annual mileage, or questions for your preparer." /></div>
                 </div>
-                <div class="tax-save-row"><button class="primary-btn" type="submit" disabled="saving">@(saving ? "Saving…" : "Save details")</button><span role="status">@saveMessage</span></div>
+                <div class="tax-save-row"><button class="primary-btn" type="submit" disabled="@saving">@(saving ? "Saving…" : "Save details")</button><span role="status">@saveMessage</span></div>
             </EditForm>
         </section>
         <p class="tax-scope">@TaxReportExporter.ScopeNote</p>
