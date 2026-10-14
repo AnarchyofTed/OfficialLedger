@@ -1,48 +1,37 @@
-﻿@page "/Account/ConfirmEmail"
+@page "/Account/ConfirmEmail"
 
-@using System.Text
 @using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.WebUtilities
 @using OfficialLedger.Data
 
 @inject UserManager<ApplicationUser> UserManager
-@inject IdentityRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
-<PageTitle>Confirm email</PageTitle>
+<PageTitle>Confirm email | BlueLedger</PageTitle>
 
-<h1>Confirm email</h1>
-<StatusMessage Message="@statusMessage" />
+<section class="auth-card">
+    <div class="auth-card-heading">
+        <p class="page-kicker">Email verification</p>
+        <h1>@(confirmed ? "You're ready to go." : "That link didn't work.")</h1>
+        <p>@(confirmed ? "Your email is confirmed. Log in to start using your ledger." : "This confirmation link is invalid or has expired. Request a new email to continue.")</p>
+    </div>
+    <a class="ol-button ol-button-blue auth-submit" href="@(confirmed ? LoginUrl : "Account/ResendEmailConfirmation")">@(confirmed ? "Log in" : "Send a new link") <span>↗</span></a>
+</section>
 
 @code {
-    private string? statusMessage;
+    private bool confirmed;
 
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
+    [SupplyParameterFromQuery] private string? UserId { get; set; }
+    [SupplyParameterFromQuery] private string? Code { get; set; }
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
 
-    [SupplyParameterFromQuery]
-    private string? UserId { get; set; }
-
-    [SupplyParameterFromQuery]
-    private string? Code { get; set; }
+    private string LoginUrl => NavigationManager.GetUriWithQueryParameters("Account/Login",
+        new Dictionary<string, object?> { ["returnUrl"] = AccountEmailService.SafeReturnUrl(ReturnUrl) });
 
     protected override async Task OnInitializedAsync()
     {
-        if (UserId is null || Code is null)
-        {
-            RedirectManager.RedirectTo("");
-        }
-
+        if (string.IsNullOrWhiteSpace(UserId) || !AccountEmailService.TryDecodeToken(Code, out var token)) return;
         var user = await UserManager.FindByIdAsync(UserId);
-        if (user is null)
-        {
-            HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-            statusMessage = $"Error loading user with ID {UserId}";
-        }
-        else
-        {
-            var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
-            var result = await UserManager.ConfirmEmailAsync(user, code);
-            statusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
-        }
+        if (user is null) return;
+        confirmed = (await UserManager.ConfirmEmailAsync(user, token)).Succeeded;
     }
 }

@@ -1,37 +1,31 @@
-﻿@page "/Account/ResendEmailConfirmation"
+@page "/Account/ResendEmailConfirmation"
 
 @using System.ComponentModel.DataAnnotations
-@using System.Text
-@using System.Text.Encodings.Web
-@using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.WebUtilities
-@using OfficialLedger.Data
 
-@inject UserManager<ApplicationUser> UserManager
-@inject IEmailSender<ApplicationUser> EmailSender
-@inject NavigationManager NavigationManager
-@inject IdentityRedirectManager RedirectManager
+@inject AccountEmailService AccountEmail
 
-<PageTitle>Resend email confirmation</PageTitle>
+<PageTitle>Resend confirmation | BlueLedger</PageTitle>
 
-<h1>Resend email confirmation</h1>
-<h2>Enter your email.</h2>
-<hr />
-<StatusMessage Message="@message" />
-<div class="row">
-    <div class="col-md-4">
-        <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" class="form-control" aria-required="true" placeholder="name@example.com" />
-                <label for="email" class="form-label">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Resend</button>
-        </EditForm>
+<section class="auth-card">
+    <div class="auth-card-heading">
+        <p class="page-kicker">Email verification</p>
+        <h1>Need a new link?</h1>
+        <p>Enter your account email to request another confirmation email.</p>
     </div>
-</div>
+    <StatusMessage Message="@message" />
+    <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post" class="auth-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="validation-summary" role="alert" />
+        <div class="auth-field">
+            <label for="resend-email">Email address</label>
+            <InputText id="resend-email" type="email" @bind-Value="Input.Email" class="auth-input" autocomplete="email" aria-required="true" placeholder="you@example.com" maxlength="256" />
+            <ValidationMessage For="() => Input.Email" class="field-validation" />
+        </div>
+        <button type="submit" class="ol-button ol-button-blue auth-submit">Resend confirmation <span>↗</span></button>
+        <p class="auth-note">Confirmation links expire in 24 hours. Check your spam folder if you do not see the email.</p>
+        <p class="auth-switch"><a href="Account/Login">Back to log in</a></p>
+    </EditForm>
+</section>
 
 @code {
     private string? message;
@@ -41,28 +35,13 @@
 
     private async Task OnValidSubmitAsync()
     {
-        var user = await UserManager.FindByEmailAsync(Input.Email!);
-        if (user is null)
-        {
-            message = "Verification email sent. Please check your email.";
-            return;
-        }
-
-        var userId = await UserManager.GetUserIdAsync(user);
-        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
-        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
-            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
-            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
-        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
-
-        message = "Verification email sent. Please check your email.";
+        await AccountEmail.RequestConfirmationAsync(Input.Email);
+        message = "If this address belongs to an account awaiting confirmation, check your inbox for a confirmation link.";
     }
 
     private sealed class InputModel
     {
-        [Required]
-        [EmailAddress]
+        [Required, EmailAddress, StringLength(256)]
         public string Email { get; set; } = "";
     }
 }

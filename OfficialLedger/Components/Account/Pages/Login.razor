@@ -68,7 +68,7 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl ?? "/dashboard");
+            RedirectManager.RedirectTo(AccountEmailService.SafeReturnUrl(ReturnUrl));
         }
         else if (result.RequiresTwoFactor)
         {
@@ -83,7 +83,7 @@
         }
         else
         {
-            errorMessage = "Error: Invalid login attempt.";
+            errorMessage = "Error: Unable to log in. Check your email and password, and make sure your email is confirmed.";
         }
     }
 
