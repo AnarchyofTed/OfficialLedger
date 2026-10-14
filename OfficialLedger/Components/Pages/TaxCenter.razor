@@ -38,7 +38,7 @@
                 <small>January 1 – December 31, @report.Year · @report.OwnerName</small></div>
             <div class="tax-export-actions">
                 <a class="primary-btn" href="@($"/tax-center/{report.Year}/worksheet")" target="_blank" rel="noopener" data-enhance-nav="false">Open CPA worksheet <span aria-hidden="true">↗</span></a>
-                <a class="secondary-btn" href="PacketUrl" data-enhance-nav="false">Download CPA packet <span aria-hidden="true">↓</span></a>
+                <a class="secondary-btn" href="@PacketUrl" data-enhance-nav="false">Download CPA packet <span aria-hidden="true">↓</span></a>
                 <label class="tax-receipt-toggle"><input type="checkbox" @bind="includeReceipts" /> Include original receipts (@report.Receipts.Count)</label>
                 <small>Print or save the worksheet as PDF. The packet is a ZIP with the worksheet and CSV files.</small>
             </div>
