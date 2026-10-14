@@ -6,6 +6,7 @@ using OfficialLedger.Components.Account;
 using OfficialLedger.Data;
 using OfficialLedger;
 using OfficialLedger.Tax;
+using OfficialLedger.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,13 +32,19 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = true;
+        options.User.RequireUniqueEmail = true;
+        options.Tokens.PasswordResetTokenProvider = PasswordResetTokenProvider.ProviderName;
+    })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddClaimsPrincipalFactory<FirstNameClaimsFactory>()
+    .AddTokenProvider<PasswordResetTokenProvider>(PasswordResetTokenProvider.ProviderName)
     .AddDefaultTokenProviders();
 
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddAccountEmail(builder.Configuration);
 builder.Services.AddScoped<TaxReportReader>();
 
 var app = builder.Build();
@@ -55,6 +62,8 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseAccountEmailPrivacy();
+app.UseRateLimiter();
 app.UseTaxReportPrivacy();
 
 app.UseStaticFiles();

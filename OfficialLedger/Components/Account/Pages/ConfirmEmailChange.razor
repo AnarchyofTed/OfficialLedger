@@ -1,6 +1,5 @@
 ﻿@page "/Account/ConfirmEmailChange"
 
-@using System.Text
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using OfficialLedger.Data
@@ -32,24 +31,25 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (UserId is null || Email is null || Code is null)
+        if (string.IsNullOrWhiteSpace(UserId) || string.IsNullOrWhiteSpace(Email) ||
+            !AccountEmailService.TryDecodeToken(Code, out var code))
         {
             RedirectManager.RedirectToWithStatus(
                 "Account/Login", "Error: Invalid email change confirmation link.", HttpContext);
+            return;
         }
 
         var user = await UserManager.FindByIdAsync(UserId);
         if (user is null)
         {
-            message = "Unable to find user with Id '{userId}'";
+            message = "Error: This email change link is invalid or has expired.";
             return;
         }
 
-        var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
         var result = await UserManager.ChangeEmailAsync(user, Email, code);
         if (!result.Succeeded)
         {
-            message = "Error changing email.";
+            message = "Error: This email change link is invalid, expired or the address is already in use.";
             return;
         }
 
