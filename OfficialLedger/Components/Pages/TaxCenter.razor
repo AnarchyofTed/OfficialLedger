@@ -19,7 +19,7 @@
 <PageTitle>Tax Center | BlueLedger</PageTitle>
 <div class="page-content tax-page" aria-busy="@(loading || saving)">
     <header class="page-header tax-header">
-        <div><p class="page-kicker">Your annual handoff</p><h1 class="page-title">Tax Center</h1>
+        <div><TaxYearHeading Year="@selectedYear" /><h1 class="page-title">Tax Center</h1>
             <p class="page-subtitle">Prepare your officiating records for your CPA or tax professional.</p></div>
         <label class="tax-year-label" for="taxYear">Calendar year
             <select id="taxYear" class="form-input" @bind="selectedYear" @bind:after="ChangeYear" disabled="@(loading || saving)">
@@ -33,7 +33,7 @@
     else if (report is not null)
     {
         <section class="tax-handoff">
-            <div><span class="tax-tag">@report.Year PREPARER PACKET</span><h2>One year. One organized handoff.</h2>
+            <div><h2>One year. One organized handoff.</h2>
                 <p>A printable worksheet, detailed spreadsheets, and the receipts behind your expenses.</p>
                 <small>January 1 – December 31, @report.Year · @report.OwnerName</small></div>
             <div class="tax-export-actions">
@@ -50,6 +50,8 @@
             <article><span>Miles logged</span><strong>@report.TotalMiles.ToString("N2", Us)</strong><small>@report.MileageGames.Count trip records · eligibility requires review</small></article>
             <article class="tax-review-metric"><span>Review reminders</span><strong>@report.ReviewItems.Count</strong><small>Missing information and items for your preparer</small></article>
         </section>
+
+        <TaxYearChart @key="report.Year" Report="report" />
 
         @if (!report.HasRecords)
         {
@@ -84,7 +86,7 @@
 
         <div class="tax-summary-grid">
             <section class="tax-card">
-                <div class="tax-section-header"><div><p class="page-kicker">Received during @report.Year</p><h2>Income by payer</h2></div>
+                <div class="tax-section-header"><div><h2>Income by payer</h2></div>
                     <a class="tax-download" href="@($"/tax-center/{report.Year}/export/income.csv")" data-enhance-nav="false">CSV ↓</a></div>
                 <div class="tax-table-wrap"><table><thead><tr><th>Payer / type</th><th>Fees</th><th>Allowances</th><th>Received</th></tr></thead><tbody>
                     @foreach (var payer in report.Payers)
@@ -98,7 +100,7 @@
             </section>
 
             <section class="tax-card">
-                <div class="tax-section-header"><div><p class="page-kicker">Paid during @report.Year</p><h2>Expense categories</h2></div>
+                <div class="tax-section-header"><div><h2>Expense categories</h2></div>
                     <a class="tax-download" href="@($"/tax-center/{report.Year}/export/expenses.csv")" data-enhance-nav="false">CSV ↓</a></div>
                 <div class="tax-table-wrap"><table><thead><tr><th>Category</th><th>Spending</th><th>Business portion*</th></tr></thead><tbody>
                     @foreach (var category in report.Categories)

@@ -2,10 +2,9 @@
 .tax-year-label { min-width: 165px; font-size: 12px; font-weight: 700; color: var(--ol-muted); }
 .tax-year-label select { margin-top: 8px; min-height: 44px; }
 .tax-handoff { display: grid; grid-template-columns: 1fr minmax(270px, .52fr); align-items: center; gap: 32px; padding: 30px; border: 1px solid #abc4df; border-radius: 14px; background: linear-gradient(115deg, #e0e9ed, #efe6d7); margin-bottom: 20px; }
-.tax-handoff h2 { margin: 14px 0 10px; font-size: clamp(22px, 2.4vw, 30px); font-weight: 800; line-height: 1.2; }
+.tax-handoff h2 { margin: 0 0 10px; font-size: clamp(22px, 2.4vw, 30px); font-weight: 800; line-height: 1.2; }
 .tax-handoff p { margin: 0 0 14px; color: #465871; font-size: 14px; max-width: 530px; line-height: 1.6; }
 .tax-handoff small { font-size: 12px; color: #465871; line-height: 1.5; }
-.tax-tag { padding: 6px 9px; color: #265181; background: #d0dfec; border-radius: 5px; font-size: 10px; letter-spacing: .11em; font-weight: 800; }
 .tax-export-actions { display: grid; gap: 12px; }
 .tax-export-actions a { justify-content: space-between; min-height: 48px; }
 .tax-receipt-toggle { display: flex; align-items: center; gap: 9px; font-size: 12px; cursor: pointer; min-height: 30px; }

@@ -11,6 +11,7 @@ public sealed record TaxPayerSummary(string Payer, string IncomeKind, int Count,
     public decimal Total => Fees + Reimbursements;
 }
 public sealed record TaxExpenseSummary(string Category, int Count, decimal Amount, decimal BusinessPortion, int UnclassifiedCount, decimal Reimbursements);
+public sealed record TaxMonthSummary(int Month, decimal PaymentsReceived, decimal ExpensesPaid, decimal Miles, int Games);
 
 /// <summary>Cash-date worksheet of recorded activity; no automatic deduction or tax calculation.</summary>
 public sealed class TaxReport
@@ -29,6 +30,7 @@ public sealed class TaxReport
     public required List<TaxReviewItem> ReviewItems { get; init; }
     public required List<TaxPayerSummary> Payers { get; init; }
     public required List<TaxExpenseSummary> Categories { get; init; }
+    public required List<TaxMonthSummary> MonthlyActivity { get; init; }
     public string OwnerName => string.Join(" ", new[] { Owner.FirstName, Owner.LastName }.Where(x => !string.IsNullOrWhiteSpace(x))) is var name && name.Length > 0 ? name : Owner.UserName ?? "Official";
     public decimal FeesReceived => ReceivedGames.Sum(x => x.FeeAmount);
     public decimal TravelAllowancesReceived => ReceivedGames.Sum(x => x.TravelReimbursement);
@@ -106,6 +108,10 @@ public sealed class TaxReport
         }
         foreach (var group in mileage.GroupBy(x => MileageDate(x).Date).Where(x => x.Count() > 1))
             issues.Add(new("Mileage", group.Key.ToString("MMM d, yyyy", CultureInfo.InvariantCulture), "Several games have miles on this date. Verify each trip is counted once.", $"/games/edit/{group.First().Id}"));
+        var monthlyIncome = received.GroupBy(x => x.PaidDate!.Value.Month).ToDictionary(x => x.Key, x => x.Sum(ReceivedAmount));
+        var monthlyExpenses = paidExpenses.GroupBy(x => x.PaidDate!.Value.Month).ToDictionary(x => x.Key, x => x.Sum(e => e.Amount));
+        var monthlyMiles = mileage.GroupBy(x => MileageDate(x).Month).ToDictionary(x => x.Key, x => x.Sum(g => g.MilesDriven));
+        var monthlyGames = workGames.GroupBy(x => x.GameDate.Month).ToDictionary(x => x.Key, x => x.Count());
         return new TaxReport
         {
             Year = year, Owner = owner, GeneratedAtUtc = generatedAtUtc ?? DateTime.UtcNow,
@@ -113,6 +119,9 @@ public sealed class TaxReport
             ReceivedGames = received, WorkGames = workGames, UndatedPaidGames = undatedGames,
             MileageGames = mileage, PaidExpenses = paidExpenses, UndatedExpenses = undatedExpenses, Receipts = reportReceipts,
             ReviewItems = issues,
+            MonthlyActivity = Enumerable.Range(1, 12).Select(month => new TaxMonthSummary(month,
+                monthlyIncome.GetValueOrDefault(month), monthlyExpenses.GetValueOrDefault(month),
+                monthlyMiles.GetValueOrDefault(month), monthlyGames.GetValueOrDefault(month))).ToList(),
             Payers = received.GroupBy(x => (Name: Payer(x).ToUpperInvariant(), Kind: x.IncomeKind))
                 .Select(x => new TaxPayerSummary(Payer(x.First()), x.Key.Kind, x.Count(), x.Sum(g => g.FeeAmount), x.Sum(g => g.TravelReimbursement)))
                 .OrderBy(x => x.Payer, StringComparer.OrdinalIgnoreCase).ThenBy(x => x.IncomeKind).ToList(),

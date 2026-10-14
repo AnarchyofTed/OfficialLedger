@@ -1,0 +1,150 @@
+@using System.Globalization
+@using OfficialLedger.Tax
+
+<section class="tax-year-chart" aria-labelledby="tax-chart-heading">
+    <header class="tax-chart-header">
+        <div>
+            <h2 id="tax-chart-heading">Monthly activity · @Report.Year</h2>
+            <p>January through December. Each point shows that month’s total.</p>
+        </div>
+        <label class="tax-chart-month-picker" for="tax-chart-month">Explore a month
+            <select id="tax-chart-month" @bind="selectedMonth">
+                @for (var index = 0; index < Months.Count; index++)
+                {
+                    <option value="@index">@MonthName(index) @Report.Year</option>
+                }
+            </select>
+        </label>
+    </header>
+
+    <div class="tax-chart-legend" aria-label="Choose chart lines">
+        @foreach (var series in Series)
+        {
+            <button type="button" class="@($"tax-chart-legend-item {series.CssClass}")"
+                    aria-pressed="@(series.Visible ? "true" : "false")"
+                    disabled="@(series.Visible && Series.Count(x => x.Visible) == 1)"
+                    @onclick="() => Toggle(series)">
+                <span class="tax-chart-swatch" aria-hidden="true"></span>
+                <span>@series.Label <small>@series.Unit</small></span>
+            </button>
+        }
+    </div>
+
+    <div class="tax-chart-scroll">
+        <div class="tax-chart-canvas">
+            <div class="tax-chart-axis-titles"><span>Dollars ($) · left scale</span><span>Miles / games · right scale</span></div>
+            <svg class="tax-chart-svg" viewBox="0 0 1000 320" role="img" aria-labelledby="tax-chart-title tax-chart-description">
+                <title id="tax-chart-title">Monthly payments, expenses, miles, and games for @Report.Year</title>
+                <desc id="tax-chart-description">Payments and expenses use the dollar scale on the left. Miles and game counts use the scale on the right. Use the line buttons and month selector to explore exact monthly totals.</desc>
+                <g class="tax-chart-grid">
+                    @for (var tick = 0; tick <= 4; tick++)
+                    {
+                        var y = PlotBottom - PlotHeight * tick / 4m;
+                        <g>
+                            <line x1="@Coordinate(PlotLeft)" x2="@Coordinate(PlotRight)" y1="@Coordinate(y)" y2="@Coordinate(y)" />
+                            <text x="@Coordinate(PlotLeft - 12m)" y="@Coordinate(y + 4m)" text-anchor="end">@AxisLabel(MoneyMaximum * tick / 4m, true)</text>
+                            <text x="@Coordinate(PlotRight + 12m)" y="@Coordinate(y + 4m)">@AxisLabel(ActivityMaximum * tick / 4m, false)</text>
+                        </g>
+                    }
+                </g>
+                <rect class="tax-chart-selected-band" x="@Coordinate(HitLeft(selectedMonth))" y="@Coordinate(PlotTop)"
+                      width="@Coordinate(MonthWidth)" height="@Coordinate(PlotHeight)" />
+                <line class="tax-chart-crosshair" x1="@Coordinate(X(selectedMonth))" x2="@Coordinate(X(selectedMonth))"
+                      y1="@Coordinate(PlotTop)" y2="@Coordinate(PlotBottom)" />
+                @foreach (var series in Series.Where(x => x.Visible))
+                {
+                    <g class="@series.CssClass">
+                        <polyline class="tax-chart-line" points="@Points(series)" />
+                        @for (var index = 0; index < Months.Count; index++)
+                        {
+                            <circle class="tax-chart-dot" cx="@Coordinate(X(index))" cy="@Coordinate(Y(series, Months[index]))"
+                                    r="@(index == selectedMonth ? "5" : "3")" />
+                        }
+                    </g>
+                }
+                @for (var index = 0; index < Months.Count; index++)
+                {
+                    var monthIndex = index;
+                    <g>
+                        <text class="@(index == selectedMonth ? "tax-chart-month-label is-selected" : "tax-chart-month-label")"
+                              x="@Coordinate(X(index))" y="300" text-anchor="middle">@Us.DateTimeFormat.GetAbbreviatedMonthName(index + 1)</text>
+                        <rect class="tax-chart-hit" x="@Coordinate(HitLeft(index))" y="@Coordinate(PlotTop)"
+                              width="@Coordinate(MonthWidth)" height="@Coordinate(PlotHeight + 36m)"
+                              @onmouseenter="() => SelectMonth(monthIndex)" @onclick="() => SelectMonth(monthIndex)">
+                            <title>@MonthName(index) @Report.Year: @MonthlyDescription(Months[index])</title>
+                        </rect>
+                    </g>
+                }
+            </svg>
+        </div>
+    </div>
+
+    <div class="tax-chart-month-summary" aria-label="Selected month totals">
+        <div class="tax-chart-summary-month"><strong>@MonthName(selectedMonth)</strong><span>@Report.Year</span></div>
+        @foreach (var series in Series)
+        {
+            <div class="@series.CssClass"><span>@series.Label</span><strong>@ValueLabel(series, Months[selectedMonth])</strong></div>
+        }
+    </div>
+    <p class="tax-chart-caption">Payments and expenses follow payment dates. Miles follow the trip date when recorded, otherwise the game date. Games follow the game date. Undated payments stay in Review your records.</p>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public TaxReport Report { get; set; } = null!;
+    private static readonly CultureInfo Us = CultureInfo.GetCultureInfo("en-US");
+    private const decimal PlotLeft = 76m, PlotRight = 924m, PlotTop = 24m, PlotBottom = 266m;
+    private const decimal PlotHeight = PlotBottom - PlotTop, MonthWidth = (PlotRight - PlotLeft) / 12m;
+    private List<TaxMonthSummary> Months => Report.MonthlyActivity;
+    private TaxReport? previousReport;
+    private int selectedMonth;
+    private readonly ChartSeries[] Series =
+    [
+        new("Payments received", "$", "tax-chart-income", true, x => x.PaymentsReceived),
+        new("Expenses paid", "$", "tax-chart-expenses", true, x => x.ExpensesPaid),
+        new("Miles logged", "mi", "tax-chart-miles", false, x => x.Miles),
+        new("Games", "count", "tax-chart-games", false, x => x.Games)
+    ];
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(previousReport, Report)) return;
+        previousReport = Report;
+        selectedMonth = Math.Max(0, Months.FindLastIndex(x => x.PaymentsReceived != 0m || x.ExpensesPaid != 0m || x.Miles != 0m || x.Games != 0));
+    }
+
+    private decimal MoneyMaximum => ScaleMaximum(true);
+    private decimal ActivityMaximum => ScaleMaximum(false);
+    private decimal ScaleMaximum(bool money)
+    {
+        var maximum = Series.Where(x => x.Visible && x.IsMoney == money)
+            .SelectMany(x => Months.Select(x.Value)).DefaultIfEmpty(0m).Max();
+        if (maximum <= 0m) return money ? 100m : 10m;
+        maximum = Math.Max(maximum, money ? 1m : 4m);
+        var power = (decimal)Math.Pow(10d, Math.Floor(Math.Log10((double)maximum)));
+        var factor = maximum / power;
+        return (factor <= 1m ? 1m : factor <= 2m ? 2m : factor <= 5m ? 5m : 10m) * power;
+    }
+
+    private static decimal X(int index) => PlotLeft + MonthWidth * (index + .5m);
+    private static decimal HitLeft(int index) => PlotLeft + MonthWidth * index;
+    private decimal Y(ChartSeries series, TaxMonthSummary month)
+        => PlotBottom - Math.Clamp(series.Value(month) / (series.IsMoney ? MoneyMaximum : ActivityMaximum), 0m, 1m) * PlotHeight;
+    private static string Coordinate(decimal value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    private string Points(ChartSeries series) => string.Join(" ", Months.Select((month, index) => $"{Coordinate(X(index))},{Coordinate(Y(series, month))}"));
+    private string AxisLabel(decimal value, bool money) => money ? value.ToString(MoneyMaximum < 4m ? "C2" : "C0", Us) : value.ToString("0.##", Us);
+    private static string MonthName(int index) => Us.DateTimeFormat.GetMonthName(index + 1);
+    private static string ValueLabel(ChartSeries series, TaxMonthSummary month)
+        => series.Value(month).ToString(series.IsMoney ? "C2" : series.Unit == "mi" ? "N2" : "N0", Us) + (series.Unit == "mi" ? " mi" : "");
+    private static string MonthlyDescription(TaxMonthSummary month)
+        => $"payments {month.PaymentsReceived.ToString("C2", Us)}, expenses {month.ExpensesPaid.ToString("C2", Us)}, {month.Miles.ToString("N2", Us)} miles, {month.Games} games";
+    private void SelectMonth(int index) => selectedMonth = index;
+    private void Toggle(ChartSeries series)
+    {
+        if (series.Visible && Series.Count(x => x.Visible) == 1) return;
+        series.Visible = !series.Visible;
+    }
+    private sealed record ChartSeries(string Label, string Unit, string CssClass, bool IsMoney, Func<TaxMonthSummary, decimal> Value)
+    {
+        public bool Visible { get; set; } = true;
+    }
+}

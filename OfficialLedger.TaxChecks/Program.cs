@@ -5,6 +5,9 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Data.Sqlite;
@@ -13,6 +16,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
 using OfficialLedger.Data;
+using OfficialLedger.Components.Shared;
 using OfficialLedger.Models;
 using OfficialLedger.Tax;
 
@@ -62,6 +66,67 @@ Check(TaxReport.Build(2025, owner, games, expenses, metadata).TotalReceived == 0
 try { TaxReport.Build(9999, owner, games, expenses, metadata); throw new Exception("Invalid year accepted"); }
 catch (ArgumentOutOfRangeException) { Check(true, "Unsupported years rejected without date overflow"); }
 Check(TaxReport.Build(2026, owner, [], [], [], new() { UserId = "other", TaxYear = 2026, PreparerNotes = "SECRET" }).Profile.PreparerNotes == null, "A foreign year profile cannot enter an export");
+
+Check(report.MonthlyActivity.Select(x => x.Month).SequenceEqual(Enumerable.Range(1, 12)), "Monthly chart always covers January through December in order");
+Check(report.MonthlyActivity.Sum(x => x.PaymentsReceived) == report.TotalReceived && report.MonthlyActivity.Sum(x => x.ExpensesPaid) == report.PaidExpenseTotal
+    && report.MonthlyActivity.Sum(x => x.Miles) == report.TotalMiles && report.MonthlyActivity.Sum(x => x.Games) == report.WorkGames.Count, "Monthly chart values reconcile to all four annual totals");
+Check(report.MonthlyActivity[0] == new TaxMonthSummary(1, 110m, 120m, 75m, 0), "January chart uses received dates and trip dates even when the game or expense was recorded last year");
+Check(report.MonthlyActivity[4] == new TaxMonthSummary(5, 0m, 40.10m, 40m, 1), "Unpaid games contribute activity but not income and undated payments and foreign records stay out of monthly totals");
+Check(report.MonthlyActivity[5] == new TaxMonthSummary(6, 50m, 0m, 10m, 1), "Mileage falls back to the game date when no trip date was recorded");
+Check(report.MonthlyActivity[11] == new TaxMonthSummary(12, 0m, 0m, 0m, 1), "December game count excludes payments and miles dated in the following year");
+Check(report.MonthlyActivity[1] == new TaxMonthSummary(2, 0m, 0m, 0m, 0), "Months without activity have zero values instead of missing points");
+Check(TaxReport.Build(2026, owner, [], [], []).MonthlyActivity.All(x => x.PaymentsReceived == 0m && x.ExpensesPaid == 0m && x.Miles == 0m && x.Games == 0), "An empty year still produces twelve zero-filled chart months");
+Check(TaxReport.Build(2027, owner, games, expenses, metadata).MonthlyActivity[0] == new TaxMonthSummary(1, 150m, 200m, 80m, 0), "Changing year rebuilds monthly cash and mileage totals for that year");
+
+using (var chartServices = new ServiceCollection().AddLogging().BuildServiceProvider())
+await using (var renderer = new HtmlRenderer(chartServices, chartServices.GetRequiredService<ILoggerFactory>()))
+{
+    async Task<string> RenderChart(TaxReport value) => await renderer.Dispatcher.InvokeAsync(async () =>
+    {
+        var output = await renderer.RenderComponentAsync<TaxYearChart>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(TaxYearChart.Report)] = value }));
+        return output.ToHtmlString();
+    });
+    var chartCulture = CultureInfo.CurrentCulture;
+    string chartHtml;
+    try { CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR"); chartHtml = await RenderChart(report); }
+    finally { CultureInfo.CurrentCulture = chartCulture; }
+    Check(System.Text.RegularExpressions.Regex.Matches(chartHtml, "<polyline ").Count == 4 && System.Text.RegularExpressions.Regex.Matches(chartHtml, "<option ").Count == 12,
+        "Chart renders four lines and twelve selectable months");
+    Check(chartHtml.Contains("111.33,132.9") && chartHtml.Contains("Dollars ($)") && chartHtml.Contains("Miles / games"), "SVG coordinates use invariant decimals and different units have explicit scales");
+    var emptyChart = await RenderChart(TaxReport.Build(2027, owner, [], [], []));
+    Check(emptyChart.Contains("January 2027") && !emptyChart.Contains("NaN") && !emptyChart.Contains("Infinity"), "Changing to an empty year renders its month labels and valid zero-baseline coordinates");
+    var yearHtml = await renderer.Dispatcher.InvokeAsync(async () =>
+        (await renderer.RenderComponentAsync<TaxYearHeading>(ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(TaxYearHeading.Year)] = 2027 }))).ToHtmlString());
+    Check(yearHtml.Contains("Tax year 2027") && System.Text.RegularExpressions.Regex.Matches(yearHtml, "tax-year-light").Count == 2
+        && System.Text.RegularExpressions.Regex.Matches(yearHtml, "tax-year-dark").Count == 2, "Styled year preserves an accessible year label and alternating light and dark digits");
+}
+
+using (var chartServices = new ServiceCollection().AddLogging().BuildServiceProvider())
+await using (var renderer = new ChartCheckRenderer(chartServices))
+{
+    var chartId = await renderer.Dispatcher.InvokeAsync(async () =>
+    {
+        var id = renderer.Mount(new TaxYearChart());
+        await renderer.Render(id, report);
+        return id;
+    });
+    async Task ClickLine(string cssClass) => await renderer.Dispatcher.InvokeAsync(() => renderer.DispatchEventAsync(renderer.Event(chartId, cssClass, "onclick"), null, new MouseEventArgs()));
+    await ClickLine("tax-chart-expenses");
+    Check(renderer.Elements(chartId, "polyline") == 3, "Clicking a legend button hides only its line");
+    await ClickLine("tax-chart-income");
+    await ClickLine("tax-chart-miles");
+    Check(renderer.Elements(chartId, "polyline") == 1 && renderer.Disabled(chartId, "tax-chart-legend-item tax-chart-games"), "Line controls allow a single metric while preventing an empty chart");
+    await ClickLine("tax-chart-income");
+    await ClickLine("tax-chart-expenses");
+    await ClickLine("tax-chart-miles");
+    Check(renderer.Elements(chartId, "polyline") == 4, "Hidden lines can be shown again");
+    await renderer.Dispatcher.InvokeAsync(() => renderer.DispatchEventAsync(renderer.Event(chartId, "tax-chart-month-picker", "onchange", "select"), null, new ChangeEventArgs { Value = "4" }));
+    Check(renderer.Month(chartId) == "May", "The native month selector updates monthly details for keyboard and touch users");
+    await renderer.Dispatcher.InvokeAsync(() => renderer.DispatchEventAsync(renderer.Event(chartId, "tax-chart-hit", "onmouseenter", occurrence: 5), null, new MouseEventArgs()));
+    Check(renderer.Month(chartId) == "June", "Hovering a plotted month updates its exact values");
+    await renderer.Dispatcher.InvokeAsync(() => renderer.Render(chartId, TaxReport.Build(2027, owner, [], [], [])));
+    Check(renderer.Month(chartId) == "January" && renderer.Elements(chartId, "polyline") == 4, "Changing to an empty report resets the month and keeps the chart renderable");
+}
 
 var html = TaxReportExporter.Html(report);
 Check(html.Contains("&lt;script&gt;private-note&lt;/script&gt;") && !html.Contains("<script>private-note"), "Worksheet HTML encodes game notes");
@@ -168,6 +233,60 @@ using (var otherResponse = await client.GetAsync("/tax-center/2026/worksheet"))
 await app.StopAsync();
 Check(!Directory.GetFiles(Path.GetTempPath(), "blueledger-tax-*.tmp").Any(), "Packet temporary files are deleted after download");
 Console.WriteLine($"{count} tax checks passed.");
+
+sealed class ChartCheckRenderer(IServiceProvider services) : Renderer(services, services.GetRequiredService<ILoggerFactory>())
+{
+    public override Dispatcher Dispatcher { get; } = Dispatcher.CreateDefault();
+    public int Mount(IComponent component) => AssignRootComponentId(component);
+    public Task Render(int id, TaxReport report) => RenderRootComponentAsync(id, ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(TaxYearChart.Report)] = report }));
+    protected override Task UpdateDisplayAsync(in RenderBatch batch) => Task.CompletedTask;
+    protected override void HandleException(Exception exception) => throw exception;
+    private RenderTreeFrame[] Frames(int id)
+    {
+        var frames = GetCurrentRenderTreeFrames(id);
+        return frames.Array.Take(frames.Count).ToArray();
+    }
+    public int Elements(int id, string name) => Frames(id).Count(x => x.FrameType == RenderTreeFrameType.Element && x.ElementName == name);
+    private static Dictionary<string, RenderTreeFrame> Attributes(RenderTreeFrame[] frames, int index)
+        => frames.Skip(index + 1).TakeWhile(x => x.FrameType == RenderTreeFrameType.Attribute).ToDictionary(x => x.AttributeName);
+    public ulong Event(int id, string cssClass, string eventName, string? element = null, int occurrence = 0)
+    {
+        var frames = Frames(id);
+        var matches = new List<ulong>();
+        for (var i = 0; i < frames.Length; i++)
+        {
+            if (frames[i].FrameType != RenderTreeFrameType.Element || (element != null && frames[i].ElementName != element)) continue;
+            var attrs = Attributes(frames, i);
+            if (element == "select" || (attrs.TryGetValue("class", out var value) && (value.AttributeValue?.ToString() ?? "").Contains(cssClass)))
+                if (attrs.TryGetValue(eventName, out var handler)) matches.Add(handler.AttributeEventHandlerId);
+        }
+        return matches[occurrence];
+    }
+    public bool Disabled(int id, string cssClass)
+    {
+        var frames = Frames(id);
+        for (var i = 0; i < frames.Length; i++)
+        {
+            if (frames[i].FrameType != RenderTreeFrameType.Element) continue;
+            var attrs = Attributes(frames, i);
+            if (attrs.TryGetValue("class", out var value) && value.AttributeValue?.ToString() == cssClass)
+                return attrs.TryGetValue("disabled", out var disabled) && disabled.AttributeValue is true;
+        }
+        return false;
+    }
+    public string Month(int id)
+    {
+        var frames = Frames(id);
+        for (var i = 0; i < frames.Length; i++)
+        {
+            if (frames[i].FrameType != RenderTreeFrameType.Element) continue;
+            var attrs = Attributes(frames, i);
+            if (attrs.TryGetValue("class", out var value) && value.AttributeValue?.ToString() == "tax-chart-summary-month")
+                return frames.Skip(i + 1).First(x => x.FrameType == RenderTreeFrameType.Text).TextContent;
+        }
+        throw new Exception("Month summary is missing");
+    }
+}
 
 sealed class CheckAuthentication(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
