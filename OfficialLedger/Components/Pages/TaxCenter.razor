@@ -128,15 +128,14 @@
         </section>
 
         <section class="tax-card tax-notes-card">
-            <div class="tax-section-header"><div><p class="page-kicker">Make the handoff personal</p><h2>Details for your preparer</h2></div></div>
-            <p>Saved with this year and included in the worksheet and packet.</p>
+            <div class="tax-section-header"><div><h2>Notes for your preparer</h2></div></div>
+            <p>Add anything your CPA should know that isn’t covered in this report. These notes are saved for this year and included in your worksheet and packet.</p>
             <EditForm Model="profileInput" OnValidSubmit="SaveProfile" FormName="taxYearProfile">
                 <DataAnnotationsValidator /><ValidationSummary />
                 <div class="form-grid">
-                    <div class="form-field form-field-full"><label for="taxBusinessName">Business name (optional)</label><InputText id="taxBusinessName" @bind-Value="profileInput.BusinessName" class="form-input" maxlength="200" disabled="@saving" /></div>
-                    <div class="form-field form-field-full"><label for="taxPreparerNotes">Notes &amp; information recorded elsewhere</label><InputTextArea id="taxPreparerNotes" @bind-Value="profileInput.PreparerNotes" class="form-input form-textarea" maxlength="4000" disabled="@saving" placeholder="Other income, split payments, refunds, reimbursements and dates, vehicle details and annual mileage, or questions for your preparer." /></div>
+                    <div class="form-field form-field-full"><label for="taxPreparerNotes">Extra notes for your preparer</label><InputTextArea id="taxPreparerNotes" @bind-Value="profileInput.PreparerNotes" class="form-input form-textarea" maxlength="4000" disabled="@saving" placeholder="Anything else your CPA should know, information not included in the report, or questions you want to discuss." /></div>
                 </div>
-                <div class="tax-save-row"><button class="primary-btn" type="submit" disabled="@saving">@(saving ? "Saving…" : "Save details")</button><span role="status">@saveMessage</span></div>
+                <div class="tax-save-row"><button class="primary-btn" type="submit" disabled="@saving">@(saving ? "Saving…" : "Save notes")</button><span role="status">@saveMessage</span></div>
             </EditForm>
         </section>
         <p class="tax-scope">@TaxReportExporter.ScopeNote</p>
@@ -210,12 +209,12 @@
             await db.SaveChangesAsync();
             report.Profile.BusinessName = profile.BusinessName;
             report.Profile.PreparerNotes = profile.PreparerNotes;
-            saveMessage = "Saved. Your worksheet and packet include these details.";
+            saveMessage = "Saved. Your worksheet and packet include these notes.";
         }
         catch (DbUpdateException ex)
         {
             Logger.LogError(ex, "Could not save tax handoff details.");
-            error = "The details could not be saved. Please reload and try again.";
+            error = "The notes could not be saved. Please reload and try again.";
         }
         finally { saving = false; }
     }
