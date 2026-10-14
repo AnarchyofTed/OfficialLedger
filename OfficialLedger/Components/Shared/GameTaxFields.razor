@@ -12,8 +12,8 @@
         <div class="form-field"><label for="taxPaidDate">Date full payment received / available</label>
             <InputDate id="taxPaidDate" @bind-Value="Model.PaidDate" class="form-input" disabled="@(ReadOnly || !Model.IsPaid)" />
             <small>Mark the game paid to record this date. Leave unknown dates blank for review.</small></div>
-        <div class="form-field"><label for="taxReimbursement">Travel reimbursement with game payment</label>
-            <InputNumber id="taxReimbursement" @bind-Value="Model.TravelReimbursement" class="form-input" min="0" step="0.01" disabled="@ReadOnly" />
+        <div class="form-field"><label for="taxReimbursement">Travel reimbursement</label>
+            <InputNumber id="taxReimbursement" @bind-Value="Model.TravelReimbursement" class="form-input" inputmode="decimal" min="0" step="0.01" disabled="@ReadOnly" />
             <ValidationMessage For="() => Model.TravelReimbursement" /></div>
         <div class="form-field"><label for="taxTravelDate">Trip date</label>
             <InputDate id="taxTravelDate" @bind-Value="Model.TravelDate" class="form-input" disabled="@ReadOnly" /></div>
