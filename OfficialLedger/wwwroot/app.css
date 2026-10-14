@@ -228,3 +228,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 840px) { .sidebar-nav { grid-template-columns: repeat(6, 1fr); } }
 .beta-payment-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .auth-submit:disabled { cursor:not-allowed; opacity:.6; }
+
+/* Travel reimbursement is entered directly without number spinner controls. */
+#taxReimbursement { appearance: textfield; -moz-appearance: textfield; }
+#taxReimbursement::-webkit-inner-spin-button,
+#taxReimbursement::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
