@@ -57,7 +57,7 @@
         }
 
         <section class="tax-card tax-review-card">
-            <div class="tax-section-header"><div><p class="page-kicker">Check before sharing</p><h2>Review your records</h2></div><span class="tax-badge">@report.ReviewItems.Count reminders</span></div>
+            <div class="tax-section-header"><div><h2>Review your records</h2></div><span class="tax-badge">@report.ReviewItems.Count reminders</span></div>
             <p>Unknown payment years appear here across all recorded years so your preparer can determine where they belong.</p>
             @if (report.UndatedPaidGames.Count > 0 || report.UndatedExpenses.Count > 0)
             {
@@ -112,7 +112,7 @@
         </div>
 
         <section class="tax-card">
-            <div class="tax-section-header"><div><p class="page-kicker">Travel support</p><h2>Mileage &amp; receipts</h2></div>
+            <div class="tax-section-header"><div><h2>Mileage &amp; receipts</h2></div>
                 <a class="tax-download" href="@($"/tax-center/{report.Year}/export/mileage.csv")" data-enhance-nav="false">Mileage CSV ↓</a></div>
             <div class="tax-travel-summary"><div><b>@report.BusinessMiles.ToString("N2", Us)</b><span>Business miles · user classified</span></div><div><b>@report.PersonalMiles.ToString("N2", Us)</b><span>Commuting / personal miles</span></div><div><b>@report.UnclassifiedMiles.ToString("N2", Us)</b><span>Miles needing classification</span></div><div><b>@report.Receipts.Count</b><span>Original receipt attachments</span></div></div>
             <p class="tax-caption">@TaxReportExporter.MileageBasis</p>
