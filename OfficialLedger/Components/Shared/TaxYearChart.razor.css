@@ -1,0 +1,49 @@
+.tax-year-chart { width: 100%; min-width: 0; padding: 26px; margin-bottom: 20px; color: var(--ol-ink); background: var(--ol-paper); border: 1px solid var(--ol-line-dark); border-radius: 12px; }
+.tax-chart-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.tax-chart-header h2 { margin: 6px 0 0; font-size: 22px; font-weight: 800; line-height: 1.25; }
+.tax-chart-header p { margin: 9px 0 0; color: var(--ol-muted); font-size: 12px; line-height: 1.6; }
+.tax-chart-month-picker { display: grid; gap: 7px; min-width: 170px; color: var(--ol-muted); font-size: 11px; font-weight: 700; }
+.tax-chart-month-picker select { width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--ol-line-dark); border-radius: 8px; color: var(--ol-ink); background: var(--ol-bone); font-size: 12px; }
+.tax-chart-legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 20px; }
+.tax-chart-income { --series-color: #245b95; }
+.tax-chart-expenses { --series-color: #b65c32; }
+.tax-chart-miles { --series-color: #14786d; }
+.tax-chart-games { --series-color: #8058a5; }
+.tax-chart-legend-item { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 9px 13px; color: var(--ol-ink); background: transparent; border: 1px solid var(--ol-line-dark); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; }
+.tax-chart-legend-item[aria-pressed="true"] { background: rgba(255,255,255,.35); border-color: var(--series-color); }
+.tax-chart-legend-item[aria-pressed="false"] { color: var(--ol-muted); }
+.tax-chart-legend-item[aria-pressed="false"] .tax-chart-swatch { opacity: .35; }
+.tax-chart-legend-item small { margin-left: 5px; color: var(--ol-muted); font-size: 10px; font-weight: 400; }
+.tax-chart-legend-item:focus-visible, .tax-chart-month-picker select:focus-visible { outline: 3px solid var(--ol-blue); outline-offset: 3px; }
+.tax-chart-swatch { width: 22px; height: 0; border-top: 3px solid var(--series-color); }
+.tax-chart-miles .tax-chart-swatch, .tax-chart-games .tax-chart-swatch { border-top-style: dashed; }
+.tax-chart-scroll { overflow-x: auto; max-width: 100%; }
+.tax-chart-canvas { min-width: 640px; }
+.tax-chart-axis-titles { display: flex; justify-content: space-between; gap: 16px; padding: 0 7.6%; color: var(--ol-muted); font-size: 10px; font-weight: 700; }
+.tax-chart-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tax-chart-grid line { stroke: var(--ol-line-dark); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.tax-chart-grid text, .tax-chart-month-label { fill: var(--ol-muted); font-size: 12px; font-family: var(--ol-body); font-variant-numeric: tabular-nums; }
+.tax-chart-selected-band { fill: #245b95; opacity: .045; }
+.tax-chart-crosshair { stroke: #245b95; stroke-opacity: .3; stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.tax-chart-line { fill: none; stroke: var(--series-color); stroke-width: 2.75; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.tax-chart-miles .tax-chart-line { stroke-dasharray: 7 4; }
+.tax-chart-games .tax-chart-line { stroke-dasharray: 2 5; }
+.tax-chart-dot { fill: var(--ol-paper); stroke: var(--series-color); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.tax-chart-month-label.is-selected { fill: var(--ol-ink); font-weight: 800; }
+.tax-chart-hit { fill: transparent; cursor: pointer; }
+.tax-chart-month-summary { display: grid; grid-template-columns: .8fr repeat(4, minmax(0,1fr)); gap: 18px; margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--ol-line-dark); }
+.tax-chart-month-summary > div { display: flex; flex-direction: column; gap: 7px; }
+.tax-chart-month-summary span { color: var(--ol-muted); font-size: 11px; line-height: 1.5; }
+.tax-chart-month-summary strong { color: var(--series-color, var(--ol-ink)); font-size: 20px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tax-chart-summary-month strong { font-size: 16px; }
+.tax-chart-caption { margin: 18px 0 0; color: var(--ol-muted); font-size: 11px; line-height: 1.65; }
+@media (max-width: 680px) {
+    .tax-year-chart { padding: 22px 17px; }
+    .tax-chart-header { align-items: stretch; flex-direction: column; gap: 16px; }
+    .tax-chart-header h2 { font-size: 20px; }
+    .tax-chart-legend { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .tax-chart-legend-item { padding: 9px; font-size: 11px; }
+    .tax-chart-swatch { width: 16px; flex: 0 0 16px; }
+    .tax-chart-month-summary { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+    .tax-chart-summary-month { grid-column: 1 / -1; }
+}

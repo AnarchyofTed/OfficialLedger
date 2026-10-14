@@ -53,6 +53,7 @@
                     <div class="form-field form-field-full"><label for="expenseNotes">Notes</label>
                         <InputTextArea id="expenseNotes" @bind-Value="Input.Notes" class="form-input form-textarea" maxlength="2000" /></div>
                 </div>
+                <ExpenseTaxFields Model="Input" />
                 <ReceiptAttachments @key="Input" Pending="pendingReceipts" Disabled="busy" UploadingChanged="value => receiptLoading = value" />
                 <div class="form-actions">
                     <button type="submit" class="primary-btn" disabled="@(busy || receiptLoading)">@(busy ? "Saving…" : receiptLoading ? "Reading receipt…" : "Save Expense")</button>
@@ -181,6 +182,9 @@
             var record = new Expense { UserId = currentUser, Receipts = pendingReceipts.Select(ReceiptFiles.CreateReceipt).ToList() };
             Db.Expenses.Add(record);
             record.ExpenseDate = Input.ExpenseDate!.Value.Date;
+            record.PaidDate = Input.PaidDate?.Date;
+            record.BusinessUsePercent = Input.BusinessUsePercent;
+            record.ReimbursedAmount = Input.ReimbursedAmount;
             record.Category = Input.Category;
             record.Amount = Input.Amount!.Value;
             record.Vendor = Input.Vendor?.Trim();

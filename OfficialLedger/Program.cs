@@ -5,6 +5,7 @@ using OfficialLedger.Components;
 using OfficialLedger.Components.Account;
 using OfficialLedger.Data;
 using OfficialLedger;
+using OfficialLedger.Tax;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddScoped<TaxReportReader>();
 
 var app = builder.Build();
 
@@ -53,6 +55,7 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseTaxReportPrivacy();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
@@ -63,6 +66,7 @@ app.MapRazorComponents<App>()
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 app.MapReceiptEndpoints();
+app.MapTaxReportEndpoints();
 
 
 using (var scope = app.Services.CreateScope())

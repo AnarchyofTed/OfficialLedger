@@ -1,0 +1,13 @@
+@using System.Globalization
+
+<div class="tax-year-heading" role="img" aria-label="@($"Tax year {Year}")">
+    @for (var index = 0; index < Digits.Length; index++)
+    {
+        <span class="@(index % 2 == 0 ? "tax-year-digit tax-year-light" : "tax-year-digit tax-year-dark")" aria-hidden="true">@Digits[index]</span>
+    }
+</div>
+
+@code {
+    [Parameter] public int Year { get; set; }
+    private string Digits => Year.ToString("D4", CultureInfo.InvariantCulture);
+}
