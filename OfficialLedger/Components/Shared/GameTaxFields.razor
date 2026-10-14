@@ -15,16 +15,6 @@
         <div class="form-field"><label for="taxReimbursement">Travel reimbursement</label>
             <InputNumber id="taxReimbursement" @bind-Value="Model.TravelReimbursement" class="form-input" inputmode="decimal" min="0" step="0.01" disabled="@ReadOnly" />
             <ValidationMessage For="() => Model.TravelReimbursement" /></div>
-        <div class="form-field"><label for="taxTravelDate">Trip date</label>
-            <InputDate id="taxTravelDate" @bind-Value="Model.TravelDate" class="form-input" disabled="@ReadOnly" /></div>
-        <div class="form-field"><label for="taxMileageKind">Trip classification</label>
-            <InputSelect id="taxMileageKind" @bind-Value="Model.MileageKind" class="form-input" disabled="@ReadOnly">
-                @foreach (var kind in TaxRecordLabels.MileageKinds) { <option value="@kind">@TaxRecordLabels.Mileage(kind)</option> }
-            </InputSelect></div>
-        <div class="form-field"><label for="taxOrigin">Trip origin / route</label>
-            <InputText id="taxOrigin" @bind-Value="Model.TravelOrigin" class="form-input" maxlength="200" disabled="@ReadOnly" /></div>
-        <div class="form-field"><label for="taxPurpose">Reason for travel</label>
-            <InputText id="taxPurpose" @bind-Value="Model.TravelPurpose" class="form-input" maxlength="500" disabled="@ReadOnly" /></div>
     </div>
     <p>Log each trip's miles once, including days with multiple games. Describe split payments, refunds, or reimbursements paid on other dates in Notes for your preparer.</p>
 </details>
